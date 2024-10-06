@@ -8,13 +8,6 @@ const fetchStudents = async () => {
     const data = await res.json();
     studentsData.push(...data); 
     displayStudents(data);
-    // Legg til knapp funksjonalitet for Hus bildene for å kunne filtrere elever ut fra det.
-    document.querySelectorAll(".house-button").forEach((button) => {
-      button.addEventListener("click", (img) => {
-        const selectedHouse = img.target.id;
-        filterStudentsByHouse(data, selectedHouse);
-      });
-    });
   } catch (err) {
     console.log(err);
   }
@@ -105,15 +98,21 @@ const displayStudents = (data) => {
     .join("");
 };
 
-// Funksjon for å filtrere ut fra hus
-const filterStudentsByHouse = (data, selectedHouse) => {
-  // Filtrere ut fra et valgt hus, eller display alle. Funker ikke alternativet for selectedHouse === "All"
+// Funksjon for å filtrere ut fra hus og sjekker også alder
+const filterByHouseAndAge = (data, selectedHouse, sortOrder = null) => {
+  // Filter students by house
   const filteredStudents = data.filter((student) => {
     return selectedHouse === "All" || student.house === selectedHouse;
   });
-  
 
-  displayStudents(filteredStudents);
+  // Sjekk om sortering ut fra alder er valgt
+  if (sortOrder) {
+    const sortedStudents = sortStudentsByAge(filteredStudents, sortOrder);
+    displayStudents(sortedStudents); // Vis ut fra alder og hus valgt
+  } else {
+    //Vis kun ut fra hus valgt
+    displayStudents(filteredStudents);
+  }
 };
 
 //DRY dont repeat yourself. Lager en egen funksjon for å bestemme alder, siden jeg må bruke den informasjonen igjen i sortStudentsByAge
@@ -146,21 +145,17 @@ const calculateAge = ({ dateOfBirth, yearOfBirth }) => {
   return age || "unknown";
 };
 
+// Funksjon for å sortere ut fra alder valgt. 
 const sortStudentsByAge = (students, sortOrder) => {
   return students.sort((a, b) => {
     const ageA = calculateAge(a);
     const ageB = calculateAge(b);
 
-    // If both ages are null, treat them as equal
+    // Sammenligner to studenter for å sortere dem.
     if (ageA === null && ageB === null) return 0;
-
-    // If ageA is null, place it last
     if (ageA === null) return 1;
-
-    // If ageB is null, place it last
     if (ageB === null) return -1;
 
-    // Compare ages based on the selected order
     return sortOrder === "youngest" ? ageA - ageB : ageB - ageA;
   });
 };
@@ -170,13 +165,27 @@ const sortStudentsByAge = (students, sortOrder) => {
 const ageFilter = document.getElementById("ageFilter");
 const sortButton = document.getElementById("sortButton");
 
-sortButton.addEventListener("click", () => {
-  const selectedValue = ageFilter.value;
-  if (selectedValue) {
-    const sortedStudents = sortStudentsByAge([...studentsData], selectedValue);
-    displayStudents(sortedStudents);
-  }
+// Hus knappene
+document.querySelectorAll(".house-button").forEach((button) => {
+  button.addEventListener("click", (img) => {
+    // Sørge for at hus valg er lagret, fjerner classen på alle utenom den valgte huset, sånn at når brukeren trykker på alder sortering, den ikke hopper vekk.
+    document.querySelectorAll(".house-button").forEach(btn => btn.classList.remove("selected"));
+    button.classList.add("selected");
+
+    const selectedHouse = img.target.id;
+    const selectedSortOrder = ageFilter.value;
+    filterByHouseAndAge(studentsData, selectedHouse, selectedSortOrder);
+  });
 });
+
+// Alder knappen
+sortButton.addEventListener("click", () => {
+  const selectedHouse =
+    document.querySelector(".house-button.selected")?.id || "All"; // Må sjekke valgt hus for at filtrering skal fungere sammen
+  const selectedSortOrder = ageFilter.value; // Hente verdien
+  filterByHouseAndAge(studentsData, selectedHouse, selectedSortOrder);
+});
+
 
 
 fetchStudents();
