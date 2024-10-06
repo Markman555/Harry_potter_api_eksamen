@@ -1,61 +1,46 @@
 const studentContainer = document.getElementById("student_container");
 const hogwartsStudents = "https://hp-api.onrender.com/api/characters/students";
-const studentsData = [];
+const studentsData = []; // Fylle tomt array med data fra api.
 
 const fetchStudents = async () => {
   try {
     const res = await fetch(hogwartsStudents);
     const data = await res.json();
-    studentsData.push(...data); 
+    studentsData.push(...data);
     displayStudents(data);
   } catch (err) {
     console.log(err);
   }
 };
 
-
-
 const saveStudentCard = () => {};
 const deleteStudentCard = () => {};
 const editStudentCard = () => {};
 
-const displayStudents = (data) => {
-  // Url for hus bilder som erstatning hvis bilde til student mangler.
-  const gryffindorImg =
-    "../assets/C0441055-AEE4-4C0D-8F43-A708DDEB6C3B-721x900.jpeg";
-  const hufflepuffImg = "../assets/Hufflepuff-harry_potter_large.webp";
-  const ravenclawImg = "../assets/Ravenclaw-harry_potter_large.avif";
-  const slytherinImg = "../assets/Slytherin.webp";
-  const defaultImg = "../assets/Harry_Potter__Hogwarts__Castle.webp";
+// Switch case for bilder. Ikke spesifisert at det må gjøres, men jeg følte for det. Det er min løsning på manglende bilder.
+const assignHouseImage = (house) => {
+  switch (house.toLowerCase()) {
+    case "gryffindor":
+      return "../assets/C0441055-AEE4-4C0D-8F43-A708DDEB6C3B-721x900.jpeg";
+    case "hufflepuff":
+      return "../assets/Hufflepuff-harry_potter_large.webp";
+    case "ravenclaw":
+      return "../assets/Ravenclaw-harry_potter_large.avif";
+    case "slytherin":
+      return "../assets/Slytherin.webp";
+    default:
+      return "../assets/Harry_Potter__Hogwarts__Castle.webp"; // Default image if no house matches
+  }
+};
 
+const displayStudents = (data) => {
   studentContainer.innerHTML = data
     .map((student) => {
-      const { name, alternate_names, image, wand, house } =
-        student; // All informasjon som er spesifisert i oppgaven.
+      const { name, alternate_names, image, wand, house } = student; // All informasjon som er spesifisert i oppgaven.
       const age = calculateAge(student); //Passer over student objektet
 
-      // Switch case for bilder. Ikke spesifisert at det må gjøres, men jeg følte for det.
-      let studentImage = image || "";
+      const studentImage = image || assignHouseImage(house);
 
-      if (!studentImage) {
-        switch (house) {
-          case "Gryffindor":
-            studentImage = gryffindorImg;
-            break;
-          case "Hufflepuff":
-            studentImage = hufflepuffImg;
-            break;
-          case "Ravenclaw":
-            studentImage = ravenclawImg;
-            break;
-          case "Slytherin":
-            studentImage = slytherinImg;
-            break;
-          default:
-            studentImage = defaultImg; // Hvis ikke noe hus er kjent.
-            break;
-        }
-      }
       // Funksjoner/knapper som elevkort skal inneholde
       //Må bruke outerHTML i return statement for å få med button tags som gjør det til et knapp element
       const saveStudent = document.createElement("button");
@@ -97,6 +82,65 @@ const displayStudents = (data) => {
     })
     .join("");
 };
+
+// Funksjon for å lage egen stsudent
+const createOwnStudent = () => {
+  let studentName = prompt("Please enter the student's name:", "");
+  if (!studentName) {
+    alert("Name is required to create a student!");
+    return;
+  }
+
+  let house = prompt(
+    "Please select the student's house: Gryffindor, Hufflepuff, Ravenclaw, Slytherin",
+    ""
+  ).toLowerCase();
+
+  const validHouses = ["gryffindor", "hufflepuff", "ravenclaw", "slytherin"];
+  if (!validHouses.includes(house)) {
+    alert("Please enter a valid house.");
+    return;
+  }
+
+  let studentAge = prompt("Please enter the student's age:", "");
+
+  // Fordi det opprinnelige arrayet inneholder studentobjekter som har yearOfBirth og dateOfBirth, må denne informasjonen puttes inn først.
+  const currentYear = new Date().getFullYear();
+  const yearOfBirth = currentYear - parseInt(studentAge);
+
+  // Wand prompts
+  let wandWood = prompt("Please enter the wand's wood type:", "");
+  let wandCore = prompt("Please enter the wand's core material:", "");
+  let wandLength = prompt("Please enter the wand's length (in inches):", "");
+
+  // Bilde ut fra hus valgt, kaller funksjon for det for å unngå repetisjon.
+  const houseImage = assignHouseImage(house);
+
+  // Create new student object
+  const newStudent = {
+    name: studentName,
+    house: house.charAt(0).toUpperCase() + house.slice(1), 
+    alternate_names: [], // Tomt array, ikke viktig.
+    yearOfBirth: yearOfBirth, // Lagrer yearOfBirth for at alder ikke skal ende opp som ukjent, lar calculateAge funksjonen og displayStudent håndtere det.
+    dateOfBirth: null, 
+    wand: {
+      wood: wandWood,
+      core: wandCore,
+      length: wandLength 
+    },
+    image: houseImage,
+  };
+
+  // Add the new student to the array and update the display
+  studentsData.unshift(newStudent);
+  console.log(studentsData);
+  displayStudents(studentsData);
+
+  alert(`${studentName} has been added to Hogwarts!`);
+};
+
+const createStudentButton = document.getElementById("createStudentButton");
+createStudentButton.addEventListener("click", createOwnStudent);
 
 // Funksjon for å filtrere ut fra hus og sjekker også alder
 const filterByHouseAndAge = (data, selectedHouse, sortOrder = null) => {
@@ -145,7 +189,7 @@ const calculateAge = ({ dateOfBirth, yearOfBirth }) => {
   return age || "unknown";
 };
 
-// Funksjon for å sortere ut fra alder valgt. 
+// Funksjon for å sortere ut fra alder valgt.
 const sortStudentsByAge = (students, sortOrder) => {
   return students.sort((a, b) => {
     const ageA = calculateAge(a);
@@ -160,8 +204,6 @@ const sortStudentsByAge = (students, sortOrder) => {
   });
 };
 
-
-
 const ageFilter = document.getElementById("ageFilter");
 const sortButton = document.getElementById("sortButton");
 
@@ -169,7 +211,9 @@ const sortButton = document.getElementById("sortButton");
 document.querySelectorAll(".house-button").forEach((button) => {
   button.addEventListener("click", (img) => {
     // Sørge for at hus valg er lagret, fjerner classen på alle utenom den valgte huset, sånn at når brukeren trykker på alder sortering, den ikke hopper vekk.
-    document.querySelectorAll(".house-button").forEach(btn => btn.classList.remove("selected"));
+    document
+      .querySelectorAll(".house-button")
+      .forEach((btn) => btn.classList.remove("selected"));
     button.classList.add("selected");
 
     const selectedHouse = img.target.id;
@@ -185,7 +229,5 @@ sortButton.addEventListener("click", () => {
   const selectedSortOrder = ageFilter.value; // Hente verdien
   filterByHouseAndAge(studentsData, selectedHouse, selectedSortOrder);
 });
-
-
 
 fetchStudents();
