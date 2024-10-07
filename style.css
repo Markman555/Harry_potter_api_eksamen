@@ -67,13 +67,62 @@ h1.title {
   object-fit: cover; /* Ensure image fits the circle */
 }
 
+/* Container for favorite students */
+#favorite_students {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 20px auto; /* Center the container */
+}
+
+/* Style for individual favorite student card (same as .student) */
+.favorite-student {
+  background-color: white;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+/* Hover effect on favorite student cards */
+.favorite-student:hover {
+  transform: translateY(-10px);
+}
+
+/* Name styling for favorite students */
+.favorite-student h3 {
+  font-size: 1.5rem;
+  color: #4b0082;
+  margin-bottom: 10px;
+}
+
+/* Paragraph styling for favorite student info */
+.favorite-student p {
+  margin: 8px 0;
+  color: #555;
+}
+
+/* Favorite student's image styling */
+.favorite-student img {
+  border-radius: 50%;
+  margin-top: 10px;
+  width: 100px;
+  height: 100px;
+  object-fit: cover; /* Ensure image fits the circle */
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
-  #student_container {
+  #student_container,
+  #favorite_students {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 
-  .student img {
+  .student img,
+  .favorite-student img {
     width: 80px;
     height: 80px;
   }

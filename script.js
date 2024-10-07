@@ -119,14 +119,14 @@ const createOwnStudent = () => {
   // Create new student object
   const newStudent = {
     name: studentName,
-    house: house.charAt(0).toUpperCase() + house.slice(1), 
+    house: house.charAt(0).toUpperCase() + house.slice(1),
     alternate_names: [], // Tomt array, ikke viktig.
     yearOfBirth: yearOfBirth, // Lagrer yearOfBirth for at alder ikke skal ende opp som ukjent, lar calculateAge funksjonen og displayStudent håndtere det.
-    dateOfBirth: null, 
+    dateOfBirth: null,
     wand: {
       wood: wandWood,
       core: wandCore,
-      length: wandLength 
+      length: wandLength,
     },
     image: houseImage,
   };
