@@ -119,6 +119,7 @@ const createOwnStudent = () => {
   // Create new student object
   const newStudent = {
     name: studentName,
+<<<<<<< HEAD
     house: house.charAt(0).toUpperCase() + house.slice(1),
     alternate_names: [], // Tomt array, ikke viktig.
     yearOfBirth: yearOfBirth, // Lagrer yearOfBirth for at alder ikke skal ende opp som ukjent, lar calculateAge funksjonen og displayStudent håndtere det.
@@ -127,6 +128,16 @@ const createOwnStudent = () => {
       wood: wandWood,
       core: wandCore,
       length: wandLength,
+=======
+    house: house.charAt(0).toUpperCase() + house.slice(1), 
+    alternate_names: [], // Tomt array, ikke viktig.
+    yearOfBirth: yearOfBirth, // Lagrer yearOfBirth for at alder ikke skal ende opp som ukjent, lar calculateAge funksjonen og displayStudent håndtere det.
+    dateOfBirth: null, 
+    wand: {
+      wood: wandWood,
+      core: wandCore,
+      length: wandLength 
+>>>>>>> 7d5e895e3638c20a473df6f2030db2d06d41d8c2
     },
     image: houseImage,
   };
