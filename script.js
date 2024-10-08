@@ -1,7 +1,6 @@
 const studentContainer = document.getElementById("student_container");
 const hogwartsStudents = "https://hp-api.onrender.com/api/characters/students";
 const studentsData = []; // Fylle tomt array med data fra api.
-localStorage.clear();
 
 // Første som skal gjøres er å fetche asynkront
 const fetchStudents = async () => {
@@ -22,7 +21,6 @@ const fetchStudents = async () => {
   }
 };
 
-
 // Switch case for bilder. Gjør det om til farger, siden oppgaven spesifiserer det.
 const assignHouseImage = (house) => {
   switch (house.toLowerCase()) {
@@ -35,10 +33,9 @@ const assignHouseImage = (house) => {
     case "slytherin":
       return "../assets/Slytherin.webp";
     default:
-      return "../assets/Harry_Potter__Hogwarts__Castle.webp"; // Default image if no house matches
+      return "../assets/Harry_Potter__Hogwarts__Castle.webp"; // Default bilde
   }
 };
-
 
 // 1.1  Visning av alle elever
 const displayStudents = (data) => {
@@ -46,16 +43,20 @@ const displayStudents = (data) => {
     .map((student, index) => {
       const { name, alternate_names, image, wand, house } = student; // All informasjon som er spesifisert i oppgaven
       const age = calculateAge(student); // Passer over student objektet for å kalkulere alder
-      const studentImage = image || assignHouseImage(house); 
+      const studentImage = image || assignHouseImage(house);
 
       // Jeg valgte denne måten å lage kort for hver enkelt student. La også til knapper i html strukturen.
       return `
       <div class="student" id="student-${index}">
         <h3>${name}</h3>
         <p>House: ${house || "Unknown"}</p>
-        <p>Alternate Names: ${alternate_names.length > 0 ? alternate_names.join(", ") : "None"}</p>
+        <p>Alternate Names: ${
+          alternate_names.length > 0 ? alternate_names.join(", ") : "None"
+        }</p>
         <p>Age: ${age}</p>
-        <p>Wand: Wood: ${wand.wood || "Unknown"}, Core: ${wand.core || "Unknown"}, Length: ${wand.length || "Unknown"}</p> 
+        <p>Wand: Wood: ${wand.wood || "Unknown"}, Core: ${
+        wand.core || "Unknown"
+      }, Length: ${wand.length || "Unknown"}</p> 
         <img src="${studentImage}" alt="${name}" width="150" />
         <div>
           <button class="save-student" data-index="${index}">Save</button>
@@ -87,7 +88,7 @@ const displayStudents = (data) => {
 
 // 1.2 Funksjon for å filtrere ut fra hus og sjekker også alder
 const filterByHouseAndAge = (data, selectedHouse, sortOrder = null) => {
-    // Først sjekke hus
+  // Først sjekke hus
   const filteredStudents = data.filter((student) => {
     return selectedHouse === "All" || student.house === selectedHouse;
   });
@@ -173,9 +174,8 @@ sortButton.addEventListener("click", () => {
   filterByHouseAndAge(studentsData, selectedHouse, selectedSortOrder);
 });
 
-
-// 1.3 Funksjon for å lage egen student
-const createOwnStudent = () => {
+// 1.3 Funksjon for prompts og funksjon for å lage egen student. Dette er for å kunne gjenbruke studentInfoPrompts i editStudent senere.
+const studentInfoPrompts = () => {
   let studentName = prompt("Please enter the student's name:", "");
   if (!studentName) {
     alert("Name is required to create a student!");
@@ -207,8 +207,7 @@ const createOwnStudent = () => {
   // Bilde ut fra hus valgt, kaller funksjon for det for å unngå repetisjon.
   const houseImage = assignHouseImage(house);
 
-  // Lag nytt student object
-  const newStudent = {
+  return (newStudent = {
     name: studentName,
     house: house.charAt(0).toUpperCase() + house.slice(1),
     alternate_names: [], // Tomt array, ikke viktig.
@@ -220,8 +219,11 @@ const createOwnStudent = () => {
       length: wandLength,
     },
     image: houseImage,
-  };
+  });
+};
 
+const createOwnStudent = () => {
+  const newStudent = studentInfoPrompts();
   // Bruker unshift metoden for å legge til student først i arrayet.
   studentsData.unshift(newStudent);
   displayStudents(studentsData);
@@ -240,7 +242,6 @@ const saveStudentToLocalStorage = (student) => {
 
 const createStudentButton = document.getElementById("createStudentButton");
 createStudentButton.addEventListener("click", createOwnStudent);
-
 
 // Lagre studenter 1.4
 const saveStudentCard = (student) => {
@@ -270,7 +271,7 @@ const saveStudentCard = (student) => {
 //Egen funskjon for å vise favoritt studenter
 const displayFavoriteStudents = (favoriteStudents) => {
   const favoriteContainer = document.getElementById("favorite_students");
-  favoriteContainer.innerHTML = "<h2>Your favorite students at Hogwarts</h2>";
+  favoriteContainer.innerHTML = "<h2>Your favorite students at Hogwarts</h2>"; //Må kjøre denne biten for å unngå rot i displayet når det oppdateres.
 
   if (favoriteStudents.length === 0) {
     favoriteContainer.innerHTML += "<p>No favorite students added yet.</p>";
@@ -338,97 +339,32 @@ const deleteStudentCard = (student) => {
 
   studentsData.splice(studentIndex, 1);
 
-  const existingStudents = JSON.parse(localStorage.getItem("students")) || [];
-  const updatedStudents = existingStudents.filter(
-    (s) => s.name !== student.name
-  );
-  localStorage.setItem("students", JSON.stringify(updatedStudents));
-
   displayStudents(studentsData);
 };
 
 // 1.6 redigere studenter. Kombinerte funksjonen for å redigere vanlige studenter og favoritt studenter for å unngå for mye repetering av kode.
 const editStudent = (studentIndex, isFavorite) => {
+  //Sjekke om det er favoritt og da hente fra storage, hvis ikke henter fra studentsData array
   let studentsList = isFavorite
     ? JSON.parse(localStorage.getItem("favoriteStudents")) || []
     : studentsData;
-  const student = studentsList[studentIndex];
+  const student = studentsList[studentIndex]; //Finner riktig student
 
-  // Prompts
-  const newName = prompt("Edit the student's name:", student.name);
-  const newHouse = prompt(
-    "Edit the student's house (Gryffindor, Hufflepuff, Ravenclaw, Slytherin):",
-    student.house
-  ).toLowerCase();
-  const validHouses = ["gryffindor", "hufflepuff", "ravenclaw", "slytherin"];
+  const updatedStudentInfo = studentInfoPrompts(student); // Kaller egen prompts funksjon og passerer student
 
-  if (!newName || !validHouses.includes(newHouse)) {
-    alert("Invalid input! Make sure to enter a valid name and house.");
-    return;
-  }
+  // Oppdaterer target objekt, student, med source objekt hentet fra prompt funksjonen.
+  Object.assign(student, updatedStudentInfo);
 
-  const newAge = prompt("Edit the student's age:", calculateAge(student));
-
-  // Oppdater student
-  student.name = newName;
-  student.house = newHouse.charAt(0).toUpperCase() + newHouse.slice(1);
-  student.yearOfBirth = new Date().getFullYear() - parseInt(newAge);
-
-  // Wand prompts
-  const newWandWood = prompt(
-    "Please enter the new wand's wood type:",
-    student.wand.wood
-  );
-  const newWandCore = prompt(
-    "Please enter the new wand's core material:",
-    student.wand.core
-  );
-  const newWandLength = prompt(
-    "Please enter the new wand's length (in inches):",
-    student.wand.length
-  );
-
-  student.wand = {
-    wood: newWandWood,
-    core: newWandCore,
-    length: newWandLength,
-  };
-
-  student.image = assignHouseImage(newHouse);
-
-  // Oppdater student listen i LocalStorage hvis det er en favoritt
+  // Oppdater studenten i localStorage, hvis det er favoritt
   if (isFavorite) {
     localStorage.setItem("favoriteStudents", JSON.stringify(studentsList));
-  } else {
-    const existingStudents = JSON.parse(localStorage.getItem("students")) || [];
-    const studentIndexInStorage = existingStudents.findIndex(
-      (s) => s.name === student.name
-    );
-    if (studentIndexInStorage !== -1) {
-      existingStudents[studentIndexInStorage] = student; // Update student's data
-      localStorage.setItem("students", JSON.stringify(existingStudents));
-    }
   }
 
-  // Sjekk om det er favoritt for å oppdatere siden
+  // Oppdater display
   if (isFavorite) {
-    displayFavoriteStudents(studentsList);
+    displayFavoriteStudents(studentsList); //Hvis favoritt, kall funksjon med listen som har oversikt over favoritt studenter fra localStorage
   } else {
-    const studentElementId = `student-${studentIndex}`;
-    const studentElement = document.getElementById(studentElementId);
-    if (studentElement) {
-      studentElement.querySelector("h3").innerText = newName;
-      studentElement.querySelector(
-        "p:nth-child(2)"
-      ).innerText = `House: ${student.house}`;
-      studentElement.querySelector(
-        "p:nth-child(3)"
-      ).innerText = `Age: ${newAge}`;
-      studentElement.querySelector(
-        "p:nth-child(4)"
-      ).innerText = `Wand: Wood: ${student.wand.wood}, Core: ${student.wand.core}, Length: ${student.wand.length}`;
-      studentElement.querySelector("img").src = student.image;
-    }
+    displayStudents(studentsData); //Hvis ikke kall funskjon med listen over alle studenter fra det opprinnelige array.
   }
 };
 
