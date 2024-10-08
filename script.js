@@ -1,17 +1,31 @@
 const studentContainer = document.getElementById("student_container");
 const hogwartsStudents = "https://hp-api.onrender.com/api/characters/students";
 const studentsData = []; // Fylle tomt array med data fra api.
+const defaultImage = "../assets/Harry_Potter__Hogwarts__Castle.webp";
 
 // Første som skal gjøres er å fetche asynkront
 const fetchStudents = async () => {
   try {
     const res = await fetch(hogwartsStudents);
     const data = await res.json();
-    // Legger til selvlagde studenter sammen med api data for å displaye umiddelbart når man går inn på siden.
+
+    // Hent studenter fra localStorage
     const existingStudents = JSON.parse(localStorage.getItem("students")) || [];
-    const allStudents = [...existingStudents, ...data];
+
+    // Filter out any null or invalid student entries
+    const validStudents = existingStudents.filter(
+      (student) => student && typeof student === "object"
+    );
+
+    //Kombiner studenter fra localStorage og Api
+    const allStudents = [...validStudents, ...data];
+
+    // Clear studentsData and push new combined data
+    studentsData.length = 0; // Clear existing data
     studentsData.push(...allStudents);
+
     displayStudents(allStudents);
+
     // For å vise favoritt studenter
     const favoriteStudents =
       JSON.parse(localStorage.getItem("favoriteStudents")) || [];
@@ -21,19 +35,20 @@ const fetchStudents = async () => {
   }
 };
 
-// Switch case for bilder. Gjør det om til farger, siden oppgaven spesifiserer det.
-const assignHouseImage = (house) => {
+
+// Switch case for farger. Er her for gjenbruk til favorittstudenter
+const assignHouseColor = (house) => {
   switch (house.toLowerCase()) {
     case "gryffindor":
-      return "../assets/C0441055-AEE4-4C0D-8F43-A708DDEB6C3B-721x900.jpeg";
+      return "red"; 
     case "hufflepuff":
-      return "../assets/Hufflepuff-harry_potter_large.webp";
+      return "yellow";
     case "ravenclaw":
-      return "../assets/Ravenclaw-harry_potter_large.avif";
+      return "blue"; 
     case "slytherin":
-      return "../assets/Slytherin.webp";
+      return "green"; 
     default:
-      return "../assets/Harry_Potter__Hogwarts__Castle.webp"; // Default bilde
+      return "gray"; 
   }
 };
 
@@ -43,11 +58,12 @@ const displayStudents = (data) => {
     .map((student, index) => {
       const { name, alternate_names, image, wand, house } = student; // All informasjon som er spesifisert i oppgaven
       const age = calculateAge(student); // Passer over student objektet for å kalkulere alder
-      const studentImage = image || assignHouseImage(house);
+      const houseColor = assignHouseColor(house); 
+      const studentImage = image || defaultImage; //Hvis ingen bilde i api, sett som default jeg har lastet opp.
 
       // Jeg valgte denne måten å lage kort for hver enkelt student. La også til knapper i html strukturen.
       return `
-      <div class="student" id="student-${index}">
+      <div class="student" id="student-${index}" style="background-color: ${houseColor}">
         <h3>${name}</h3>
         <p>House: ${house || "Unknown"}</p>
         <p>Alternate Names: ${
@@ -195,7 +211,6 @@ const studentInfoPrompts = () => {
 
   let studentAge = prompt("Please enter the student's age:", "");
 
-  // Fordi det opprinnelige arrayet inneholder studentobjekter som har yearOfBirth og dateOfBirth, må denne informasjonen puttes inn først.
   const currentYear = new Date().getFullYear();
   const yearOfBirth = currentYear - parseInt(studentAge);
 
@@ -204,33 +219,39 @@ const studentInfoPrompts = () => {
   let wandCore = prompt("Please enter the wand's core material:", "");
   let wandLength = prompt("Please enter the wand's length (in inches):", "");
 
-  // Bilde ut fra hus valgt, kaller funksjon for det for å unngå repetisjon.
-  const houseImage = assignHouseImage(house);
+  // Assign the background color based on the house
+  const backgroundColor = assignHouseColor(house);
 
-  return (newStudent = {
+  // Default image in case there's no image provided (currently not handling image input)
+  const studentImage = defaultImage;
+
+  return {
     name: studentName,
     house: house.charAt(0).toUpperCase() + house.slice(1),
-    alternate_names: [], // Tomt array, ikke viktig.
-    yearOfBirth: yearOfBirth, // Lagrer yearOfBirth for at alder ikke skal ende opp som ukjent, lar calculateAge funksjonen og displayStudent håndtere det.
+    alternate_names: [], // Empty array for alternate names
+    yearOfBirth: yearOfBirth, // Year of birth calculated
     dateOfBirth: null,
     wand: {
       wood: wandWood,
       core: wandCore,
       length: wandLength,
     },
-    image: houseImage,
-  });
+    image: studentImage, // Default image
+    backgroundColor: backgroundColor, // New property for background color
+  };
 };
 
 const createOwnStudent = () => {
   const newStudent = studentInfoPrompts();
-  // Bruker unshift metoden for å legge til student først i arrayet.
+  if (!newStudent) return; // Exit if no valid student was created
+
+  // Add the new student to the beginning of the studentsData array
   studentsData.unshift(newStudent);
   displayStudents(studentsData);
 
-  saveStudentToLocalStorage(newStudent);
+  saveStudentToLocalStorage(newStudent)
 
-  alert(`${studentName} has been added to Hogwarts!`);
+  alert(`${newStudent.name} has been added to Hogwarts!`);
 };
 
 //Funksjon for å lagre nye studenter i localStorage
@@ -281,8 +302,11 @@ const displayFavoriteStudents = (favoriteStudents) => {
   favoriteContainer.innerHTML += favoriteStudents
     .map((student, index) => {
       const age = calculateAge(student);
+      const houseColor = assignHouseColor(student.house);
+      const studentImage = student.image || defaultImage;
+
       return `
-      <div class="student" id="favorite-student-${index}">
+      <div class="student" id="favorite-student-${index}"  style="background-color: ${houseColor}">
         <h3>${student.name}</h3>
         <p>House: ${student.house || "Unknown"}</p>
         <p>Alternate Names: ${
@@ -294,7 +318,7 @@ const displayFavoriteStudents = (favoriteStudents) => {
         <p>Wand: Wood: ${student.wand.wood}, Core: ${
         student.wand.core || "Unknown"
       }, Length: ${student.wand.length || "Unknown"}</p>
-        <img src="${student.image}" alt="${student.name}" width="150" />
+        <img src="${studentImage}" alt="${student.name}" width="150" />
         <div>
           <button class="delete-favorite-student" data-index="${index}">Delete</button>
           <button class="edit-favorite-student" data-index="${index}">Edit</button>
@@ -333,13 +357,33 @@ const deleteFavoriteStudent = (studentIndex, studentElementId) => {
 
 //Egen funksjon for å slette vanlge elever, Bedre å holde dem skilt i dette tilfellet
 const deleteStudentCard = (student) => {
+  // Find the index of the student in the studentsData array
   const studentIndex = studentsData.findIndex(
-    (index) => index.name === student.name
+    (currentStudent) => currentStudent.name === student.name
   );
 
-  studentsData.splice(studentIndex, 1);
+  // If the student is found, remove them from the studentsData array
+  if (studentIndex !== -1) {
+    studentsData.splice(studentIndex, 1);
 
-  displayStudents(studentsData);
+    // Now, update the localStorage by removing the student from the stored list
+    const existingStudents = JSON.parse(localStorage.getItem("students")) || [];
+
+    // Find the index of the student in the existingStudents array
+    const localStorageIndex = existingStudents.findIndex(
+      (currentStudent) => currentStudent.name === student.name
+    );
+
+    // If the student exists in localStorage, remove them
+    if (localStorageIndex !== -1) {
+      existingStudents.splice(localStorageIndex, 1);
+      // Update localStorage with the new array after removal
+      localStorage.setItem("students", JSON.stringify(existingStudents));
+    }
+
+    // Finally, update the display with the modified studentsData array
+    displayStudents(studentsData);
+  }
 };
 
 // 1.6 redigere studenter. Kombinerte funksjonen for å redigere vanlige studenter og favoritt studenter for å unngå for mye repetering av kode.
@@ -358,6 +402,9 @@ const editStudent = (studentIndex, isFavorite) => {
   // Oppdater studenten i localStorage, hvis det er favoritt
   if (isFavorite) {
     localStorage.setItem("favoriteStudents", JSON.stringify(studentsList));
+  } else {
+    // Sørger for å lagre redigering i localStorage, også hvis det er vanlig student
+   localStorage.setItem("students", JSON.stringify(studentsList)); // Save the updated non-favorite student
   }
 
   // Oppdater display

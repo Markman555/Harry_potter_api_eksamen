@@ -1,4 +1,4 @@
-/* General Page Styles */
+General Page Styles */
 body {
   font-family: Arial, sans-serif;
   background-color: #f4f4f4;
@@ -32,7 +32,6 @@ h1.title {
 
 /* Each student card */
 .student {
-  background-color: white;
   border-radius: 10px;
   padding: 15px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -69,6 +68,7 @@ h1.title {
 
 /* Container for favorite students */
 #favorite_students {
+  background-color: #f4f4f4;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 20px;
@@ -79,7 +79,6 @@ h1.title {
 
 /* Style for individual favorite student card (same as .student) */
 .favorite-student {
-  background-color: white;
   border-radius: 10px;
   padding: 15px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -127,5 +126,4 @@ h1.title {
     height: 80px;
   }
 }
-
 
