@@ -40,13 +40,13 @@ const fetchStudents = async () => {
 const assignHouseColor = (house) => {
   switch (house.toLowerCase()) {
     case "gryffindor":
-      return "red"; 
+      return "#9e1b32"; 
     case "hufflepuff":
-      return "yellow";
+      return "#FFD700";
     case "ravenclaw":
-      return "blue"; 
+      return "#00308F"; 
     case "slytherin":
-      return "green"; 
+      return "#1B4D3E"; 
     default:
       return "gray"; 
   }

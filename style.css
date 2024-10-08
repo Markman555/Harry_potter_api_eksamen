@@ -47,14 +47,14 @@ h1.title {
 /* Student's name styling */
 .student h3 {
   font-size: 1.5rem;
-  color: #4b0082;
+  color: #08010c;
   margin-bottom: 10px;
 }
 
 /* Paragraph styling for other student info */
 .student p {
   margin: 8px 0;
-  color: #555;
+  color: #000000;
 }
 
 /* Student's image styling */
