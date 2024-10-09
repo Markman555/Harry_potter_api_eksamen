@@ -1,54 +1,54 @@
 const studentContainer = document.getElementById("student_container");
 const hogwartsStudents = "https://hp-api.onrender.com/api/characters/students";
-const studentsData = []; // Fylle tomt array med data fra api.
+let studentsData = []; // Fylle tomt array med data fra api.
 const defaultImage = "../assets/Harry_Potter__Hogwarts__Castle.webp";
 
-// Første som skal gjøres er å fetche asynkront
+let isStudentsDataModified = false; // Flag for å holde styr på om noen er blitt redigert
+
 const fetchStudents = async () => {
   try {
-    const res = await fetch(hogwartsStudents);
-    const data = await res.json();
+    // Sjekker om data er blitt modifisert, hvis ikke returner false
+    const isStudentsDataModified =
+      JSON.parse(localStorage.getItem("isStudentsDataModified")) || false;
 
-    // Hent studenter fra localStorage
-    const existingStudents = JSON.parse(localStorage.getItem("students")) || [];
+    if (!isStudentsDataModified) {
+      const res = await fetch(hogwartsStudents);
+      const apiStudents = await res.json();
 
-    // Filter out any null or invalid student entries
-    const validStudents = existingStudents.filter(
-      (student) => student && typeof student === "object"
-    );
+      // Lagrer api data til localStorage på første load in
+      localStorage.setItem("students", JSON.stringify(apiStudents));
+      studentsData = [...apiStudents];
+      displayStudents(studentsData);
+    } else {
+      // Hvis en student var redigert så henter jeg all data fra localStorage
+      const existingStudents =
+        JSON.parse(localStorage.getItem("students")) || [];
+      studentsData = [...existingStudents];
+      displayStudents(existingStudents);
+    }
 
-    //Kombiner studenter fra localStorage og Api
-    const allStudents = [...validStudents, ...data];
-
-    // Clear studentsData and push new combined data
-    studentsData.length = 0; // Clear existing data
-    studentsData.push(...allStudents);
-
-    displayStudents(allStudents);
-
-    // For å vise favoritt studenter
+    // Display favorite students
     const favoriteStudents =
       JSON.parse(localStorage.getItem("favoriteStudents")) || [];
     displayFavoriteStudents(favoriteStudents);
   } catch (err) {
-    console.log(err);
+    console.error("Error fetching students:", err);
   }
 };
-
 
 // Switch case for farger. Er her for gjenbruk til favorittstudenter
 const assignHouseColor = (house) => {
   switch (house.toLowerCase()) {
     case "gryffindor":
-      return "#9e1b32"; 
+      return "#9e1b32";
     case "hufflepuff":
       return "#FFD700";
     case "ravenclaw":
-      return "#00308F"; 
+      return "#00308F";
     case "slytherin":
-      return "#1B4D3E"; 
+      return "#1B4D3E";
     default:
-      return "gray"; 
+      return "gray";
   }
 };
 
@@ -58,7 +58,7 @@ const displayStudents = (data) => {
     .map((student, index) => {
       const { name, alternate_names, image, wand, house } = student; // All informasjon som er spesifisert i oppgaven
       const age = calculateAge(student); // Passer over student objektet for å kalkulere alder
-      const houseColor = assignHouseColor(house); 
+      const houseColor = assignHouseColor(house);
       const studentImage = image || defaultImage; //Hvis ingen bilde i api, sett som default jeg har lastet opp.
 
       // Jeg valgte denne måten å lage kort for hver enkelt student. La også til knapper i html strukturen.
@@ -191,8 +191,12 @@ sortButton.addEventListener("click", () => {
 });
 
 // 1.3 Funksjon for prompts og funksjon for å lage egen student. Dette er for å kunne gjenbruke studentInfoPrompts i editStudent senere.
-const studentInfoPrompts = () => {
-  let studentName = prompt("Please enter the student's name:", "");
+
+const studentInfoPrompts = (student = {}) => {
+  let studentName = prompt(
+    "Please enter the student's name:",
+    student.name || ""
+  ); 
   if (!studentName) {
     alert("Name is required to create a student!");
     return;
@@ -200,7 +204,7 @@ const studentInfoPrompts = () => {
 
   let house = prompt(
     "Please select the student's house: Gryffindor, Hufflepuff, Ravenclaw, Slytherin",
-    ""
+    student.house ? student.house.toLowerCase() : "" // Pre-fill with existing house
   ).toLowerCase();
 
   const validHouses = ["gryffindor", "hufflepuff", "ravenclaw", "slytherin"];
@@ -209,47 +213,61 @@ const studentInfoPrompts = () => {
     return;
   }
 
-  let studentAge = prompt("Please enter the student's age:", "");
+  let studentAge = prompt(
+    "Please enter the student's age:",
+    student.yearOfBirth ? new Date().getFullYear() - student.yearOfBirth : ""
+  ); 
 
   const currentYear = new Date().getFullYear();
   const yearOfBirth = currentYear - parseInt(studentAge);
 
-  // Wand prompts
-  let wandWood = prompt("Please enter the wand's wood type:", "");
-  let wandCore = prompt("Please enter the wand's core material:", "");
-  let wandLength = prompt("Please enter the wand's length (in inches):", "");
+  // Wand prompts, forhåndsfylt hvis eksisterende informasjon
+  let wandWood = prompt(
+    "Please enter the wand's wood type:",
+    student.wand ? student.wand.wood : ""
+  ); 
+  let wandCore = prompt(
+    "Please enter the wand's core material:",
+    student.wand ? student.wand.core : ""
+  ); 
+  let wandLength = prompt(
+    "Please enter the wand's length (in inches):",
+    student.wand ? student.wand.length : ""
+  ); 
 
-  // Assign the background color based on the house
+  // Bakgrunnsfarge
   const backgroundColor = assignHouseColor(house);
 
-  // Default image in case there's no image provided (currently not handling image input)
-  const studentImage = defaultImage;
+  // Bilde fra api hvis man redigerer student eller opplastet bilde hvis ikke.
+  const studentImage = student.image || defaultImage;
 
   return {
     name: studentName,
     house: house.charAt(0).toUpperCase() + house.slice(1),
-    alternate_names: [], // Empty array for alternate names
-    yearOfBirth: yearOfBirth, // Year of birth calculated
+    alternate_names: [], 
+    yearOfBirth: yearOfBirth,
     dateOfBirth: null,
     wand: {
       wood: wandWood,
       core: wandCore,
       length: wandLength,
     },
-    image: studentImage, // Default image
-    backgroundColor: backgroundColor, // New property for background color
+    image: studentImage, 
+    backgroundColor: backgroundColor, 
   };
 };
 
 const createOwnStudent = () => {
   const newStudent = studentInfoPrompts();
-  if (!newStudent) return; // Exit if no valid student was created
-
-  // Add the new student to the beginning of the studentsData array
+  // Legger til ny student på begynnelsen med unshift
   studentsData.unshift(newStudent);
   displayStudents(studentsData);
 
-  saveStudentToLocalStorage(newStudent)
+  saveStudentToLocalStorage(newStudent);
+
+  isStudentsDataModified = true;
+  localStorage.setItem("isStudentsDataModified", JSON.stringify(true));
+  console.log("isStudentsDataModified set to true");
 
   alert(`${newStudent.name} has been added to Hogwarts!`);
 };
@@ -392,8 +410,8 @@ const editStudent = (studentIndex, isFavorite) => {
   let studentsList = isFavorite
     ? JSON.parse(localStorage.getItem("favoriteStudents")) || []
     : studentsData;
-  const student = studentsList[studentIndex]; //Finner riktig student
 
+  const student = studentsList[studentIndex]; //Finner riktig student
   const updatedStudentInfo = studentInfoPrompts(student); // Kaller egen prompts funksjon og passerer student
 
   // Oppdaterer target objekt, student, med source objekt hentet fra prompt funksjonen.
@@ -404,8 +422,11 @@ const editStudent = (studentIndex, isFavorite) => {
     localStorage.setItem("favoriteStudents", JSON.stringify(studentsList));
   } else {
     // Sørger for å lagre redigering i localStorage, også hvis det er vanlig student
-   localStorage.setItem("students", JSON.stringify(studentsList)); // Save the updated non-favorite student
+    localStorage.setItem("students", JSON.stringify(studentsList)); // Save the updated non-favorite student
   }
+
+  // Lagrer endringene i local storage og true for å forhindre duplisering av originale api data.
+  localStorage.setItem("isStudentsDataModified", true); //
 
   // Oppdater display
   if (isFavorite) {
