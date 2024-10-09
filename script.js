@@ -380,8 +380,7 @@ const deleteStudentCard = (student) => {
     (currentStudent) => currentStudent.name === student.name
   );
 
-  // If the student is found, remove them from the studentsData array
-  if (studentIndex !== -1) {
+
     studentsData.splice(studentIndex, 1);
 
     // Now, update the localStorage by removing the student from the stored list
@@ -393,15 +392,14 @@ const deleteStudentCard = (student) => {
     );
 
     // If the student exists in localStorage, remove them
-    if (localStorageIndex !== -1) {
+   
       existingStudents.splice(localStorageIndex, 1);
       // Update localStorage with the new array after removal
       localStorage.setItem("students", JSON.stringify(existingStudents));
-    }
-
-    // Finally, update the display with the modified studentsData array
+    
+    // Oppdater display
     displayStudents(studentsData);
-  }
+  
 };
 
 // 1.6 redigere studenter. Kombinerte funksjonen for å redigere vanlige studenter og favoritt studenter for å unngå for mye repetering av kode.
