@@ -94,6 +94,11 @@ button:hover {
     background-color: #0056b3;
 }
 
+#monsters-container {
+    display: none;
+    width: 40%;
+}
+
 .monster {
   margin: 10px 0;
   padding: 10px;

@@ -1,5 +1,8 @@
 const partyContainer = document.getElementById("party-container");
 const defaultImage = "./assets/Harry_Potter__Hogwarts__Castle.webp";
+const optionsContainer = document.querySelector(".options-container");
+const monstersContainer = document.getElementById("monsters-container");
+
 let spells = [];
 // Health
 const studentHealthPoints = 500;
@@ -188,9 +191,22 @@ const displayStaff = (staff, container) => {
   container.appendChild(staffContainer);
 };
 
+const fightButton = document.getElementById("fight-btn");
+fightButton.addEventListener("click", async () => {
+  // Gjemmer options meny for å kun vise monstere. Spilleren må bekjempe dem for å komme tilbake til menyen.
+   optionsContainer.style.display = "none";
+
+  // fetcher monstere når de trykker
+  const monsters = await fetchMonsters();
+  displayMonsters(monsters);
+
+  // Mer funksjonalitet, utvikler
+  await fightMonsters(monsters);
+});
+
 const displayMonsters = (monsters) => {
-  const monstersContainer = document.getElementById("monsters-container");
   monstersContainer.innerHTML = ""; // Tøm tidligere monstere
+  monstersContainer.style.display = "block"; // Gjør monster container synlig nå
 
   monsters.forEach((monster) => {
     const monsterDiv = document.createElement("div");
@@ -208,12 +224,46 @@ const displayMonsters = (monsters) => {
   });
 };
 
-const fightButton = document.getElementById("fight-btn");
-fightButton.addEventListener("click", async () => {
-  const monsters = await fetchMonsters();
-  displayMonsters(monsters);
-});
+const performAttack = (attackerName, attackerType) => {
+  // Velger en random spell for hver gang.
+  const randomSpell = spells[Math.floor(Math.random() * spells.length)];
+
+  // Spells gjør en random damage, men setter bunn og topp grense
+  let randomDamage = Math.floor(Math.random() * (180 - 30 + 1)) + 30;
+
+  // Hvis karakter er staff legger vi til 10% på damage
+  if (attackerType === "Staff") {
+    randomDamage = Math.floor(randomDamage * 1.1);
+  }
+
+  // Varsel om angrepet utført
+  const attackMessage = `${attackerName} (${attackerType}) casts ${randomSpell.name}: ${randomSpell.description}. Damage dealt: ${randomDamage}`;
+  alert(attackMessage);
+
+  // Utvide funksjonalitet, kanskje kalle en funksjon som heter damageToMonster for å utføre damage til et tilfeldig monster
+};
+
+// Jobber med disse funksjonene etterhvert.
+/*
+const fightMonsters = async (monsters) => {
+  while (monsters.length > 0) {
+ 
+
+    // Check if all monsters are defeated
+    if (monsters.length === 0) {
+      alert("All monsters defeated! Victory!");
+      endCombat();
+    }
+  }
+};
+*/
+/*
+const endCombat = () => {
+  monstersContainer.style.display = "none"; // Hide monsters container
+  optionsContainer.querySelector(".box").style.display = "block"; // Show options menu again
+};
+
+*/
 
 fetchHarryPotterData();
-fetchMonsters();
 fetchSpells();
