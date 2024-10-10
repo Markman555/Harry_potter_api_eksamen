@@ -93,3 +93,11 @@ button {
 button:hover {
     background-color: #0056b3;
 }
+
+.monster {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
