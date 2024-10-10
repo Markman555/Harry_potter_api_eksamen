@@ -194,28 +194,28 @@ const displayStaff = (staff, container) => {
 const fightButton = document.getElementById("fight-btn");
 fightButton.addEventListener("click", async () => {
   // Gjemmer options meny for å kun vise monstere. Spilleren må bekjempe dem for å komme tilbake til menyen.
-   optionsContainer.style.display = "none";
+  optionsContainer.style.display = "none";
 
   // fetcher monstere når de trykker
   const monsters = await fetchMonsters();
   displayMonsters(monsters);
-
-  // Mer funksjonalitet, utvikler
-  await fightMonsters(monsters);
 });
 
 const displayMonsters = (monsters) => {
   monstersContainer.innerHTML = ""; // Tøm tidligere monstere
-  monstersContainer.style.display = "block"; // Gjør monster container synlig nå
+  monstersContainer.style.display = "block"; //Gjør monster container synlig nå
 
   monsters.forEach((monster) => {
+    console.log(`Rendering monster ${monster.name}, HP: ${monster.hit_points}`); // Log each monster's HP before rendering
+
     const monsterDiv = document.createElement("div");
     monsterDiv.className = "monster";
     monsterDiv.innerHTML = `
-      <strong>Name:</strong> ${monster.name}<br>
-      <strong>HP:</strong> ${monster.hit_points}<br>
-      <strong>Armor Class:</strong> ${monster.armor_class}<br>
-      <strong>Challenge Rating:</strong> ${monster.challenge_rating}<br>
+      <strong>Name:</strong> <span class="monster-name">${
+        monster.name
+      }</span><br>
+      <strong class="hp">HP:</strong>
+      <strong class="monster-hp">${monster.hit_points}</strong><br>
       <strong>Actions:</strong> ${monster.actions
         .map((action) => action.name)
         .join(", ")}
@@ -232,15 +232,58 @@ const performAttack = (attackerName, attackerType) => {
   let randomDamage = Math.floor(Math.random() * (180 - 30 + 1)) + 30;
 
   // Hvis karakter er staff legger vi til 10% på damage
-  if (attackerType === "Staff") {
+  if (attackerType === "staff") {
     randomDamage = Math.floor(randomDamage * 1.1);
   }
-
   // Varsel om angrepet utført
-  const attackMessage = `${attackerName} (${attackerType}) casts ${randomSpell.name}: ${randomSpell.description}. Damage dealt: ${randomDamage}`;
-  alert(attackMessage);
+  alert(`${attackerName} used ${randomSpell.name}`);
 
-  // Utvide funksjonalitet, kanskje kalle en funksjon som heter damageToMonster for å utføre damage til et tilfeldig monster
+  // Hent fra monster arrayet
+  const monsters = Array.from(monstersContainer.children).map(
+    (monsterDiv, index) => {
+      const monsterName = monsterDiv.querySelector(".monster-name").innerText;
+      const monsterHPElement = monsterDiv.querySelector(".monster-hp");
+
+      let monsterHP = 0;
+
+      monsterHP = Number(monsterHPElement.innerText);
+
+      return {
+        name: monsterName,
+        hit_points: monsterHP,
+      };
+    }
+  );
+
+  // Deal damage to a random monster
+  damageToMonster(monsters, randomDamage);
+};
+
+const damageToMonster = (monsters, damage) => {
+  // Velger random mosnter
+  const randomMonsterIndex = Math.floor(Math.random() * monsters.length);
+  const monster = monsters[randomMonsterIndex];
+
+  // damage
+  monster.hit_points -= damage;
+
+  // Oppdater monster display
+  const monsterDiv = document.querySelector(
+    `.monster:nth-child(${randomMonsterIndex + 1})`
+  );
+  const monsterHPElement = monsterDiv.querySelector(".monster-hp");
+   monsterHPElement.innerText = monster.hit_points; 
+
+  // Alert om damage dealt. Fiks at det ikke står - health, når de går under 0
+  alert(
+    `${monster.name} was dealt ${damage} damage! Remaining HP: ${monster.hit_points}`
+  );
+
+  // Sjekk om monster er død
+  if (monster.hit_points <= 0) {
+    alert(`${monster.name} is defeated!`);
+    monsterDiv.remove(); // Hvis død, fjern fra display
+  }
 };
 
 // Jobber med disse funksjonene etterhvert.
