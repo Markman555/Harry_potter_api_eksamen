@@ -318,59 +318,56 @@ const monsterRetaliate = () => {
   alert("Monsters are retaliating!");
 
   monsters.forEach((monster) => {
-    // Each monster attacks a random hero
+    // Hver monster angriper en helt
     const randomHeroIndex = Math.floor(Math.random() * heroes.length);
     const randomHero = heroes[randomHeroIndex];
 
-    // Calculate random damage (between 0 and 150)
+    // Tilfeldig damage mellom 0 og 150, kan øke
     const randomDamage = Math.floor(Math.random() * 151);
 
-    // Apply damage to the random hero
+    // Damage til helt
     randomHero.healthPoints -= randomDamage;
 
-    // Ensure hero HP does not go below 0
+    // Heltens hp skal ikke gå under 0
     randomHero.healthPoints = Math.max(0, randomHero.healthPoints);
 
-    // Update hero's health display and health bar based on type (student or staff)
+    // Oppdater helts helse status basert på om de er staff eller student
     if (randomHero.type === "student") {
       updateStudentHealthDisplay(randomHero);
     } else if (randomHero.type === "staff") {
       updateStaffHealthDisplay(randomHero);
     }
 
-    // Alert about the damage dealt
+    // Alert om damage dealet
     alert(`${monster.name} attacks ${randomHero.name} for ${randomDamage} damage! Remaining HP: ${randomHero.healthPoints}`);
 
-    // If the hero is defeated, handle logic here (optional)
+    // Hvis helt dør, håndter logikk her, legge til å fjerne dem fra DOM eventuelt
     if (randomHero.healthPoints <= 0) {
       alert(`${randomHero.name} has been defeated!`);
-      // Optional: You can implement logic to remove the hero from the game here.
     }
   });
 
-  // After all monsters have attacked
+  // Signaliser at det nå er heltenes tur
   alert("All enemies have attacked, it is now the heroes' turn.");
 
-  // Reset hero index to 0 for the next round
+  // Reset
   currentHeroIndex = 0;
 };
 
-// Function to update student's health display and health bar
 const updateStudentHealthDisplay = (student) => {
-  // Update the health points display (e.g., "50/100")
+  // Helse poeng
   student.healthDisplay.innerText = `${student.healthPoints}/${studentHealthPoints}`;
 
-  // Calculate the new width of the health bar
+  // Bredden på baren
   const healthPercentage = (student.healthPoints / studentHealthPoints) * 100;
   student.healthBarFill.style.width = `${healthPercentage}%`;
 };
 
-// Function to update staff's health display and health bar
 const updateStaffHealthDisplay = (staff) => {
-  // Update the health points display (e.g., "50/100")
+  // Helse poeng oppdateres
   staff.healthDisplay.innerText = `${staff.healthPoints}/${staffHealthPoints}`;
 
-  // Calculate the new width of the health bar
+  // Bredde på baren oppdateres
   const healthPercentage = (staff.healthPoints / staffHealthPoints) * 100;
   staff.healthBarFill.style.width = `${healthPercentage}%`;
 };
@@ -378,20 +375,20 @@ const updateStaffHealthDisplay = (staff) => {
 const checkForWin = () => {
   if (monsters.length === 0) {
     alert("The heroes have defeated all the monsters! They win!");
-    monstersContainer.style.display = "none"; // Hide the monsters container
-    optionsContainer.style.display = "block"; // Show the options menu
+    monstersContainer.style.display = "none"; // Gjem monster container når spiller vinner
+    optionsContainer.style.display = "block"; // Vis options meny
 
         heroes.forEach((hero) => {
-          hero.healthPoints = hero.maxHealthPoints; // Reset health points to max
+          hero.healthPoints = hero.maxHealthPoints; // Reset helse poeng
 
-          // Update the hero's health display
+          // Oppdater
           hero.healthDisplay.innerText = `${hero.maxHealthPoints}/${hero.maxHealthPoints}`;
 
-          // Reset the health bar fill to 100%
+          // Reset bar til 100%
           hero.healthBarFill.style.width = "100%";
         });
 
-    gameWon = true; // Set gameWon flag to true
+    gameWon = true; // Spillet er vunnet nå
   }
 };
 
