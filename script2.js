@@ -4,6 +4,7 @@ const optionsContainer = document.querySelector(".options-container");
 const monstersContainer = document.getElementById("monsters-container");
 let currentHeroIndex = 0; // Hvilken helt angriper.
 // Intialiserer og fyller disse array
+let gameWon = false; 
 let heroes = [];
 let spells = [];
 let monsters = [];
@@ -206,6 +207,7 @@ const displayStaff = (staff, container) => {
 // Fight knapp fetcher monstre for å sloss mot.
 const fightButton = document.getElementById("fight-btn");
 fightButton.addEventListener("click", async () => {
+  gameWon = false; // reset spill
   optionsContainer.style.display = "none"; // Gjemme options meny for renere UI
   monsters = await fetchMonsters();
   displayMonsters(monsters); // Kall neste funkjon for å vise dem
@@ -251,7 +253,7 @@ const selectMonsterToAttack = (monster) => {
   castSpellToDamage(currentHero, currentMonster);
 
   // Sjekk om runden er ferdig, hvis ja er det monsterene sin tur til å angripe, kall den funksjonen og implementer logikken.
-  if (currentHeroIndex === 0) {
+  if (!gameWon && currentHeroIndex === 0) {
     alert("Round complete! All heroes have attacked.");
     monsterRetaliate()
   }
@@ -281,7 +283,7 @@ const castSpellToDamage = (currentHero, currentMonster) => {
   currentHeroIndex = (currentHeroIndex + 1) % heroes.length;
 
   // Indiker hvilken helt har neste tur, lag en sjekk om runden er ferdig, så denne alerten ikke kjører i det tilfellet
-    if (currentHeroIndex !== 0) {
+    if (!gameWon && currentHeroIndex !== 0) {
       alert(`It's now ${heroes[currentHeroIndex].name}'s turn!`);
     }
 };
@@ -302,6 +304,10 @@ const damageToMonster = (currentMonster, damage) => {
       if (currentMonster.hit_points <= 0) {
         alert(`${currentMonster.name} is defeated!`);
         monsterDiv.remove(); // Fjerner monster
+        monsters = monsters.filter((m) => m.name !== currentMonster.name); // Remove monster from array
+
+        // Check if all monsters are defeated
+        checkForWin(); 
       }
     }
   });
@@ -369,6 +375,25 @@ const updateStaffHealthDisplay = (staff) => {
   staff.healthBarFill.style.width = `${healthPercentage}%`;
 };
 
+const checkForWin = () => {
+  if (monsters.length === 0) {
+    alert("The heroes have defeated all the monsters! They win!");
+    monstersContainer.style.display = "none"; // Hide the monsters container
+    optionsContainer.style.display = "block"; // Show the options menu
+
+        heroes.forEach((hero) => {
+          hero.healthPoints = hero.maxHealthPoints; // Reset health points to max
+
+          // Update the hero's health display
+          hero.healthDisplay.innerText = `${hero.maxHealthPoints}/${hero.maxHealthPoints}`;
+
+          // Reset the health bar fill to 100%
+          hero.healthBarFill.style.width = "100%";
+        });
+
+    gameWon = true; // Set gameWon flag to true
+  }
+};
 
 fetchHarryPotterData();
 fetchSpells();
