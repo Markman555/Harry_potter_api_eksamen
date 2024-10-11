@@ -4,12 +4,12 @@ const optionsContainer = document.querySelector(".options-container");
 const monstersContainer = document.getElementById("monsters-container");
 let currentHeroIndex = 0; // Hvilken helt angriper.
 // Intialiserer og fyller disse array
-let gameWon = false; 
+let gameWon = false;
 let heroes = [];
 let spells = [];
 let monsters = [];
 
-// Helse poeng 
+// Helse poeng
 const studentHealthPoints = 500;
 const staffHealthPoints = 800;
 
@@ -36,7 +36,6 @@ const fetchStudents = async () => {
   }
 };
 
-
 const fetchStaff = async () => {
   try {
     const staffResponse = await fetch(
@@ -59,7 +58,6 @@ const fetchSpells = async () => {
     console.error("Error fetching spells:", error);
   }
 };
-
 
 const fetchMonsters = async () => {
   try {
@@ -255,7 +253,7 @@ const selectMonsterToAttack = (monster) => {
   // Sjekk om runden er ferdig, hvis ja er det monsterene sin tur til å angripe, kall den funksjonen og implementer logikken.
   if (!gameWon && currentHeroIndex === 0) {
     alert("Round complete! All heroes have attacked.");
-    monsterRetaliate()
+    monsterRetaliate();
   }
 };
 
@@ -283,9 +281,9 @@ const castSpellToDamage = (currentHero, currentMonster) => {
   currentHeroIndex = (currentHeroIndex + 1) % heroes.length;
 
   // Indiker hvilken helt har neste tur, lag en sjekk om runden er ferdig, så denne alerten ikke kjører i det tilfellet
-    if (!gameWon && currentHeroIndex !== 0) {
-      alert(`It's now ${heroes[currentHeroIndex].name}'s turn!`);
-    }
+  if (!gameWon && currentHeroIndex !== 0) {
+    alert(`It's now ${heroes[currentHeroIndex].name}'s turn!`);
+  }
 };
 
 const damageToMonster = (currentMonster, damage) => {
@@ -307,7 +305,7 @@ const damageToMonster = (currentMonster, damage) => {
         monsters = monsters.filter((m) => m.name !== currentMonster.name); // Remove monster from array
 
         // Check if all monsters are defeated
-        checkForWin(); 
+        checkForWin();
       }
     }
   });
@@ -318,12 +316,17 @@ const monsterRetaliate = () => {
   alert("Monsters are retaliating!");
 
   monsters.forEach((monster) => {
+    if (heroes.length === 0) {
+      alert("All heroes have been defeated! Game over.");
+      resetGame(); // Call a function to reset or restart the game
+      return;
+    }
     // Hver monster angriper en helt
     const randomHeroIndex = Math.floor(Math.random() * heroes.length);
     const randomHero = heroes[randomHeroIndex];
 
-    // Tilfeldig damage mellom 0 og 150, kan øke
-    const randomDamage = Math.floor(Math.random() * 151);
+    // Tilfeldig damage mellom 0 og 200, kan øke
+    const randomDamage = Math.floor(Math.random() * 501);
 
     // Damage til helt
     randomHero.healthPoints -= randomDamage;
@@ -339,16 +342,24 @@ const monsterRetaliate = () => {
     }
 
     // Alert om damage dealet
-    alert(`${monster.name} attacks ${randomHero.name} for ${randomDamage} damage! Remaining HP: ${randomHero.healthPoints}`);
+    alert(
+      `${monster.name} attacks ${randomHero.name} for ${randomDamage} damage! Remaining HP: ${randomHero.healthPoints}`
+    );
 
     // Hvis helt dør, håndter logikk her, legge til å fjerne dem fra DOM eventuelt
     if (randomHero.healthPoints <= 0) {
       alert(`${randomHero.name} has been defeated!`);
+      const randomHeroElement = document.getElementById(randomHero.name);
+      if (randomHeroElement) randomHeroElement.remove();
+
+      heroes.splice(randomHeroIndex, 1);
     }
   });
 
   // Signaliser at det nå er heltenes tur
-  alert("All enemies have attacked, it is now the heroes' turn.");
+  if (heroes.length !== 0) {
+    alert("All enemies have attacked, it is now the heroes' turn.");
+  }
 
   // Reset
   currentHeroIndex = 0;
@@ -378,15 +389,15 @@ const checkForWin = () => {
     monstersContainer.style.display = "none"; // Gjem monster container når spiller vinner
     optionsContainer.style.display = "block"; // Vis options meny
 
-        heroes.forEach((hero) => {
-          hero.healthPoints = hero.maxHealthPoints; // Reset helse poeng
+    heroes.forEach((hero) => {
+      hero.healthPoints = hero.maxHealthPoints; // Reset helse poeng
 
-          // Oppdater
-          hero.healthDisplay.innerText = `${hero.maxHealthPoints}/${hero.maxHealthPoints}`;
+      // Oppdater
+      hero.healthDisplay.innerText = `${hero.maxHealthPoints}/${hero.maxHealthPoints}`;
 
-          // Reset bar til 100%
-          hero.healthBarFill.style.width = "100%";
-        });
+      // Reset bar til 100%
+      hero.healthBarFill.style.width = "100%";
+    });
 
     gameWon = true; // Spillet er vunnet nå
   }
