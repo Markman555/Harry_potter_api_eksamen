@@ -281,7 +281,9 @@ const castSpellToDamage = (currentHero, currentMonster) => {
   currentHeroIndex = (currentHeroIndex + 1) % heroes.length;
 
   // Indiker hvilken helt har neste tur, lag en sjekk om runden er ferdig, så denne alerten ikke kjører i det tilfellet
-  alert(`It's now ${heroes[currentHeroIndex].name}'s turn!`);
+    if (currentHeroIndex !== 0) {
+      alert(`It's now ${heroes[currentHeroIndex].name}'s turn!`);
+    }
 };
 
 const damageToMonster = (currentMonster, damage) => {
