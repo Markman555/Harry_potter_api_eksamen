@@ -192,8 +192,8 @@ const displayStaff = (staff, container) => {
     heroes.push({
       name: member.name,
       type: "staff",
-      healthPoints: studentHealthPoints,
-      maxHealthPoints: studentHealthPoints,
+      healthPoints: staffHealthPoints,
+      maxHealthPoints: staffHealthPoints,
       healthBarFill: healthBarDiv.querySelector(".health-bar-fill"),
       healthDisplay: healthDisplay,
     });
@@ -253,6 +253,7 @@ const selectMonsterToAttack = (monster) => {
   // Sjekk om runden er ferdig, hvis ja er det monsterene sin tur til å angripe, kall den funksjonen og implementer logikken.
   if (currentHeroIndex === 0) {
     alert("Round complete! All heroes have attacked.");
+    monsterRetaliate()
   }
 };
 
@@ -279,7 +280,7 @@ const castSpellToDamage = (currentHero, currentMonster) => {
   // Roter til neste helt etter angrep
   currentHeroIndex = (currentHeroIndex + 1) % heroes.length;
 
-  // Indiker hvilken helt har neste tur
+  // Indiker hvilken helt har neste tur, lag en sjekk om runden er ferdig, så denne alerten ikke kjører i det tilfellet
   alert(`It's now ${heroes[currentHeroIndex].name}'s turn!`);
 };
 
@@ -306,8 +307,64 @@ const damageToMonster = (currentMonster, damage) => {
 
 // Monsterenes tur
 const monsterRetaliate = () => {
-  // Legger til loggikk
-  alert(`${currentMonster.name} retaliates!`);
+  alert("Monsters are retaliating!");
+
+  monsters.forEach((monster) => {
+    // Each monster attacks a random hero
+    const randomHeroIndex = Math.floor(Math.random() * heroes.length);
+    const randomHero = heroes[randomHeroIndex];
+
+    // Calculate random damage (between 0 and 150)
+    const randomDamage = Math.floor(Math.random() * 151);
+
+    // Apply damage to the random hero
+    randomHero.healthPoints -= randomDamage;
+
+    // Ensure hero HP does not go below 0
+    randomHero.healthPoints = Math.max(0, randomHero.healthPoints);
+
+    // Update hero's health display and health bar based on type (student or staff)
+    if (randomHero.type === "student") {
+      updateStudentHealthDisplay(randomHero);
+    } else if (randomHero.type === "staff") {
+      updateStaffHealthDisplay(randomHero);
+    }
+
+    // Alert about the damage dealt
+    alert(`${monster.name} attacks ${randomHero.name} for ${randomDamage} damage! Remaining HP: ${randomHero.healthPoints}`);
+
+    // If the hero is defeated, handle logic here (optional)
+    if (randomHero.healthPoints <= 0) {
+      alert(`${randomHero.name} has been defeated!`);
+      // Optional: You can implement logic to remove the hero from the game here.
+    }
+  });
+
+  // After all monsters have attacked
+  alert("All enemies have attacked, it is now the heroes' turn.");
+
+  // Reset hero index to 0 for the next round
+  currentHeroIndex = 0;
+};
+
+// Function to update student's health display and health bar
+const updateStudentHealthDisplay = (student) => {
+  // Update the health points display (e.g., "50/100")
+  student.healthDisplay.innerText = `${student.healthPoints}/${studentHealthPoints}`;
+
+  // Calculate the new width of the health bar
+  const healthPercentage = (student.healthPoints / studentHealthPoints) * 100;
+  student.healthBarFill.style.width = `${healthPercentage}%`;
+};
+
+// Function to update staff's health display and health bar
+const updateStaffHealthDisplay = (staff) => {
+  // Update the health points display (e.g., "50/100")
+  staff.healthDisplay.innerText = `${staff.healthPoints}/${staffHealthPoints}`;
+
+  // Calculate the new width of the health bar
+  const healthPercentage = (staff.healthPoints / staffHealthPoints) * 100;
+  staff.healthBarFill.style.width = `${healthPercentage}%`;
 };
 
 
