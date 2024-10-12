@@ -4,6 +4,7 @@ const optionsContainer = document.querySelector(".options-container");
 const monstersContainer = document.getElementById("monsters-container");
 const upgradesContainer = document.getElementById("upgrades-container");
 let currentHeroIndex = 0; // Hvilken helt angriper.
+let difficultyLevel = 5;
 // Intialiserer og fyller disse array
 let xp = 150; // total xp til spiller
 let unlockedSpells = []; // legger til funksjonalitet for å unlocke spells
@@ -64,7 +65,7 @@ const fetchSpells = async () => {
     basicSpells = fetchedSpells.slice(0, 3);
     unlockedSpells = [...basicSpells]; // Starter med disse spells
 
-    allSpells = fetchedSpells; // lagrer alle spells 
+    allSpells = fetchedSpells; // lagrer alle spells
   } catch (error) {
     console.error("Error fetching spells:", error);
   }
@@ -72,14 +73,21 @@ const fetchSpells = async () => {
 
 const fetchMonsters = async () => {
   try {
-    const response = await fetch("https://api.open5e.com/monsters/");
+    const response = await fetch(
+      ` https://api.open5e.com/monsters/?challenge_rating=${difficultyLevel}`
+    );
     const data = await response.json();
 
+        const filteredMonsters = data.results.filter(
+          (monster) => parseFloat(monster.challenge_rating) <= difficultyLevel
+        );
+     // filtrerer ut fra hvilken vanskelighetsnivå nådd
+
     // Henter mellom 4 og 8 monstere, tilfeldig for å gjøre det spicy
-    const numberOfMonsters = Math.floor(Math.random() * (8 - 4 + 1)) + 4;
-    return data.results
-      .sort(() => 0.5 - Math.random())
-      .slice(0, numberOfMonsters);
+  const numberOfMonsters = Math.floor(Math.random() * (8 - 4 + 1)) + 4;
+  return filteredMonsters
+    .sort(() => 0.5 - Math.random())
+    .slice(0, numberOfMonsters);
   } catch (error) {
     console.error("Error fetching monsters:", error);
     return [];
@@ -235,8 +243,8 @@ const showUpgradesMenu = () => {
   const returnButton = document.createElement("button");
   returnButton.innerText = "Return to Menu";
   returnButton.onclick = () => {
-    upgradesContainer.style.display = "none"; 
-    optionsContainer.style.display = "block"; 
+    upgradesContainer.style.display = "none";
+    optionsContainer.style.display = "block";
   };
   upgradesContainer.appendChild(returnButton);
 
@@ -266,7 +274,6 @@ const showUpgradesMenu = () => {
 
   upgradesContainer.appendChild(upgradesDiv);
 };
-
 
 const buySpell = (spell) => {
   if (xp >= 100) {
@@ -324,8 +331,8 @@ const selectMonsterToAttack = (monster) => {
 
 const castSpellToDamage = (currentHero, currentMonster) => {
   // tilfeldig spell
-   const randomSpell =
-     unlockedSpells[Math.floor(Math.random() * unlockedSpells.length)];
+  const randomSpell =
+    unlockedSpells[Math.floor(Math.random() * unlockedSpells.length)];
 
   // TIlfeldig damage mellom 20 og 150
   let randomDamage = Math.floor(Math.random() * (150 - 20 + 1)) + 20;
@@ -378,7 +385,7 @@ const damageToMonster = (currentMonster, damage) => {
   });
 };
 
-// Monsterenes tur
+
 const monsterRetaliate = () => {
   alert("Monsters are retaliating!");
 
@@ -392,13 +399,12 @@ const monsterRetaliate = () => {
     const randomHeroIndex = Math.floor(Math.random() * heroes.length);
     const randomHero = heroes[randomHeroIndex];
 
-    // Tilfeldig damage mellom 0 og 200, kan øke
-    const randomDamage = Math.floor(Math.random() * 201);
+    // Damage scaling, men fortsatt også et tilfeldig nummer
+    const baseDamage = 50; 
+    const randomDamage = Math.floor(Math.random() * baseDamage) + monster.challenge_rating * 10;
 
-    // Damage til helt
+    // Damage til helt, Heltens hp skal ikke gå under 0
     randomHero.healthPoints -= randomDamage;
-
-    // Heltens hp skal ikke gå under 0
     randomHero.healthPoints = Math.max(0, randomHero.healthPoints);
 
     // Oppdater helts helse status basert på om de er staff eller student
@@ -455,6 +461,9 @@ const checkForWin = () => {
     alert("The heroes have defeated all the monsters! They win!");
     monstersContainer.style.display = "none"; // Gjem monster container når spiller vinner
     optionsContainer.style.display = "block"; // Vis options meny
+    // Øk vanskelig for neste runde
+    difficultyLevel += 1;
+    alert(`Difficulty increased to CR ${difficultyLevel}.`);
 
     heroes.forEach((hero) => {
       hero.healthPoints = hero.maxHealthPoints; // Reset helse poeng
