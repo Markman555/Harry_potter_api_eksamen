@@ -2,8 +2,13 @@ const partyContainer = document.getElementById("party-container");
 const defaultImage = "./assets/Harry_Potter__Hogwarts__Castle.webp";
 const optionsContainer = document.querySelector(".options-container");
 const monstersContainer = document.getElementById("monsters-container");
+const upgradesContainer = document.getElementById("upgrades-container");
 let currentHeroIndex = 0; // Hvilken helt angriper.
 // Intialiserer og fyller disse array
+let xp = 150; // total xp til spiller
+let unlockedSpells = []; // legger til funksjonalitet for å unlocke spells
+let basicSpells = []; // de som spilleren har
+let allSpells = []; // Alle spells fetchet fra api
 let gameWon = false;
 let heroes = [];
 let spells = [];
@@ -53,7 +58,13 @@ const fetchStaff = async () => {
 const fetchSpells = async () => {
   try {
     const response = await fetch("https://hp-api.onrender.com/api/spells");
-    spells = await response.json();
+    const fetchedSpells = await response.json();
+
+    // Starter med 3 basic spells
+    basicSpells = fetchedSpells.slice(0, 3);
+    unlockedSpells = [...basicSpells]; // Starter med disse spells
+
+    allSpells = fetchedSpells; // lagrer alle spells 
   } catch (error) {
     console.error("Error fetching spells:", error);
   }
@@ -75,7 +86,6 @@ const fetchMonsters = async () => {
   }
 };
 
-// Display students
 const displayStudents = (students, container) => {
   const studentContainer = document.createElement("div");
   studentContainer.className = "character-container";
@@ -211,6 +221,61 @@ fightButton.addEventListener("click", async () => {
   displayMonsters(monsters); // Kall neste funkjon for å vise dem
 });
 
+const upgradesButton = document.getElementById("upgrades-btn");
+
+upgradesButton.addEventListener("click", () => {
+  showUpgradesMenu();
+});
+
+const showUpgradesMenu = () => {
+  optionsContainer.style.display = "none"; // Gjemmer options menu, legg til en knapp for å gå tilbaek
+  upgradesContainer.style.display = "block";
+
+  // Tilbake til options meny
+  const returnButton = document.createElement("button");
+  returnButton.innerText = "Return to Menu";
+  returnButton.onclick = () => {
+    upgradesContainer.style.display = "none"; 
+    optionsContainer.style.display = "block"; 
+  };
+  upgradesContainer.appendChild(returnButton);
+
+  // Filtrere vekk spells allerede kjøpt
+  const upgradeOptions = allSpells.filter(
+    (spell) => !unlockedSpells.includes(spell)
+  );
+
+  const upgradesDiv = document.createElement("div");
+  upgradesDiv.className = "upgrade-menu";
+  // Kommer til å justere på dette senere, men for nå er dette bra nok
+  upgradeOptions.forEach((spell) => {
+    const spellDiv = document.createElement("div");
+    spellDiv.innerHTML = `
+      <strong>Spell:</strong> ${spell.name}<br>
+      <strong>Cost:</strong> 100 XP<br>
+    `;
+
+    const buyButton = document.createElement("button");
+    buyButton.innerText = "Buy";
+    buyButton.disabled = xp < 100; // Sørg for de har nok xp
+    buyButton.onclick = () => buySpell(spell); // Kalle funksjon for å unlocke spell valgt
+
+    spellDiv.appendChild(buyButton);
+    upgradesDiv.appendChild(spellDiv);
+  });
+
+  upgradesContainer.appendChild(upgradesDiv);
+};
+
+
+const buySpell = (spell) => {
+  if (xp >= 100) {
+    xp -= 100; // xp
+    unlockedSpells.push(spell); // push inn spell i array
+    alert(`You unlocked the spell: ${spell.name}! Remaining XP: ${xp}`);
+  }
+};
+
 const displayMonsters = (monsters) => {
   monstersContainer.innerHTML = ""; // Tøm tidligere innhold, kan være nødvendig, men kan også muligvis fjernes
   monstersContainer.style.display = "block"; // Endre display for å vise container med monstre
@@ -259,12 +324,13 @@ const selectMonsterToAttack = (monster) => {
 
 const castSpellToDamage = (currentHero, currentMonster) => {
   // tilfeldig spell
-  const randomSpell = spells[Math.floor(Math.random() * spells.length)];
+   const randomSpell =
+     unlockedSpells[Math.floor(Math.random() * unlockedSpells.length)];
 
   // TIlfeldig damage mellom 20 og 150
   let randomDamage = Math.floor(Math.random() * (150 - 20 + 1)) + 20;
 
-  // Hvis helten er stagg, legg til 10%
+  // Hvis helten er staff, legg til 10%
   if (currentHero.type === "staff") {
     randomDamage = Math.floor(randomDamage * 1.1);
   }
@@ -302,9 +368,10 @@ const damageToMonster = (currentMonster, damage) => {
       if (currentMonster.hit_points <= 0) {
         alert(`${currentMonster.name} is defeated!`);
         monsterDiv.remove(); // Fjerner monster
-        monsters = monsters.filter((m) => m.name !== currentMonster.name); // Remove monster from array
-
-        // Check if all monsters are defeated
+        monsters = monsters.filter((m) => m.name !== currentMonster.name); // Fjern monster  fra array
+        xp += 50; // xp reward
+        alert(`You earned 50 XP! Total XP: ${xp}`);
+        // SJekk om alle monstere er døde
         checkForWin();
       }
     }
@@ -318,7 +385,7 @@ const monsterRetaliate = () => {
   monsters.forEach((monster) => {
     if (heroes.length === 0) {
       alert("All heroes have been defeated! Game over.");
-      resetGame(); // Call a function to reset or restart the game
+      resetGame(); // Legge til funksjonalitet for game over state
       return;
     }
     // Hver monster angriper en helt
@@ -326,7 +393,7 @@ const monsterRetaliate = () => {
     const randomHero = heroes[randomHeroIndex];
 
     // Tilfeldig damage mellom 0 og 200, kan øke
-    const randomDamage = Math.floor(Math.random() * 501);
+    const randomDamage = Math.floor(Math.random() * 201);
 
     // Damage til helt
     randomHero.healthPoints -= randomDamage;
@@ -346,7 +413,7 @@ const monsterRetaliate = () => {
       `${monster.name} attacks ${randomHero.name} for ${randomDamage} damage! Remaining HP: ${randomHero.healthPoints}`
     );
 
-    // Hvis helt dør, håndter logikk her, legge til å fjerne dem fra DOM eventuelt
+    // Hvis helt dør, fjern fra array. DOM manipulasjon fungerer ikke
     if (randomHero.healthPoints <= 0) {
       alert(`${randomHero.name} has been defeated!`);
       const randomHeroElement = document.getElementById(randomHero.name);
