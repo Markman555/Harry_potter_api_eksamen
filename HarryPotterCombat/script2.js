@@ -6,6 +6,8 @@ const monstersContainer = document.getElementById("monsters-container");
 const upgradesContainer = document.getElementById("upgrades-container");
 let currentHeroIndex = 0; // Hvilken helt angriper.
 let difficultyLevel = 10;
+let minDamage = 0;
+let maxDamage = 80;
 // Intialiserer og fyller disse array
 let xp = 150; // total xp til spiller
 let unlockedSpells = []; // legger til funksjonalitet for å unlocke spells
@@ -65,9 +67,12 @@ const fetchSpells = async () => {
 
     // Starter med 3 basic spells
     basicSpells = fetchedSpells.slice(0, 3);
-    unlockedSpells = [...basicSpells]; // Starter med disse spells
+    unlockedSpells = [...basicSpells];
 
-    allSpells = fetchedSpells; // lagrer alle spells
+    allSpells = fetchedSpells.map((spell) => ({
+      name: spell.name,
+      description: spell.description, // Add description from the API
+    }));
   } catch (error) {
     console.error("Error fetching spells:", error);
   }
@@ -101,9 +106,9 @@ const fetchMonsters = async (difficultyLevel) => {
     }
 
     // tilfeldig velger mellom 4 og 8 monstre
-    const numberOfMonsters = Math.floor(Math.random() * 5) + 4; 
+    const numberOfMonsters = Math.floor(Math.random() * 5) + 4;
     const selectedMonsters = allMonsters
-      .sort(() => 0.5 - Math.random()) 
+      .sort(() => 0.5 - Math.random())
       .slice(0, numberOfMonsters) // Metoder for å gjøre det random om det er 4 eller 8
       .map((monster) => ({
         ...monster,
@@ -116,7 +121,6 @@ const fetchMonsters = async (difficultyLevel) => {
     return [];
   }
 };
-
 
 const displayStudents = (students, container) => {
   const studentContainer = document.createElement("div");
@@ -163,6 +167,7 @@ const displayStudents = (students, container) => {
         (studentHealthPoints / studentHealthPoints) * 100
       }%;"></div>
     `;
+    
     studentDiv.appendChild(healthBarDiv);
     // Push inn karakter i helte array.
     heroes.push({
@@ -263,6 +268,7 @@ upgradesButton.addEventListener("click", () => {
 const showUpgradesMenu = () => {
   optionsContainer.style.display = "none"; // Gjemmer options menu, legg til en knapp for å gå tilbaek
   upgradesContainer.style.display = "block";
+  upgradesContainer.style.width = "30%";
 
   // Tilbake til options meny
   const returnButton = document.createElement("button");
@@ -285,13 +291,14 @@ const showUpgradesMenu = () => {
     const spellDiv = document.createElement("div");
     spellDiv.innerHTML = `
       <strong>Spell:</strong> ${spell.name}<br>
+       <strong>Description:</strong> ${spell.description}<br>
       <strong>Cost:</strong> 100 XP<br>
     `;
 
     const buyButton = document.createElement("button");
     buyButton.innerText = "Buy";
     buyButton.disabled = xp < 100; // Sørg for de har nok xp
-    buyButton.onclick = () => buySpell(spell); // Kalle funksjon for å unlocke spell valgt
+    buyButton.onclick = () => buySpell(spell, spellDiv); // Kalle funksjon for å unlocke spell valgt
 
     spellDiv.appendChild(buyButton);
     upgradesDiv.appendChild(spellDiv);
@@ -300,11 +307,15 @@ const showUpgradesMenu = () => {
   upgradesContainer.appendChild(upgradesDiv);
 };
 
-const buySpell = (spell) => {
+const buySpell = (spell, spellDiv) => {
   if (xp >= 100) {
     xp -= 100; // xp
     unlockedSpells.push(spell); // push inn spell i array
+    allSpells = allSpells.filter((s) => s !== spell); //Fjern spell fra all spells etter det er kjøpt
+    maxDamage += 5; // Når bruker kjøper spell øker max damage til heltene
     alert(`You unlocked the spell: ${spell.name}! Remaining XP: ${xp}`);
+     alert(`You can now do damage up to ${maxDamage}.`);
+    spellDiv.remove();
   }
 };
 
@@ -368,7 +379,8 @@ const castSpellToDamage = (currentHero, currentMonster) => {
     unlockedSpells[Math.floor(Math.random() * unlockedSpells.length)];
 
   // TIlfeldig damage mellom 20 og 150
-  let randomDamage = Math.floor(Math.random() * (150 - 20 + 1)) + 20;
+   let randomDamage =
+     Math.floor(Math.random() * (maxDamage - minDamage + 1)) + minDamage;
 
   // Hvis helten er staff, legg til 10%
   if (currentHero.type === "staff") {
