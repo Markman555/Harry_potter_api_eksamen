@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1 class="title">Hogwarts students</h1>
+    <div id="houseFilterButtons">
+      <img
+        id="All"
+        src="./assets/Harry_Potter__Hogwarts__Castle.webp"
+        alt="All Houses"
+        class="house-button"
+      />
+      <img
+        id="Gryffindor"
+        src="./assets/C0441055-AEE4-4C0D-8F43-A708DDEB6C3B-721x900.jpeg"
+        alt="Gryffindor"
+        class="house-button"
+      />
+      <img
+        id="Hufflepuff"
+        src="./assets/Hufflepuff-harry_potter_large.webp"
+        alt="Hufflepuff"
+        class="house-button"
+      />
+      <img
+        id="Ravenclaw"
+        src="./assets/Ravenclaw-harry_potter_large.avif"
+        alt="Ravenclaw"
+        class="house-button"
+      />
+      <img
+        id="Slytherin"
+        src="./assets/Slytherin.webp"
+        alt="Slytherin"
+        class="house-button"
+      />
+    </div>
+<select id="ageFilter">
+  <option value="">Select age group</option>
+  <option value="youngest">Youngest First</option>
+  <option value="oldest">Oldest First</option>
+</select>
+<button id="sortButton">Sort Students</button>
+<button id="createStudentButton">Create your own student at Hogwarts</button>
+    <main>
+        <div id="favorite_students"><h2>Your favorite students at Hogwarts</h2></div>
+      <div id="student_container"></div>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>
