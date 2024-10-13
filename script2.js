@@ -4,7 +4,7 @@ const optionsContainer = document.querySelector(".options-container");
 const monstersContainer = document.getElementById("monsters-container");
 const upgradesContainer = document.getElementById("upgrades-container");
 let currentHeroIndex = 0; // Hvilken helt angriper.
-let difficultyLevel = 5;
+let difficultyLevel = 10;
 // Intialiserer og fyller disse array
 let xp = 150; // total xp til spiller
 let unlockedSpells = []; // legger til funksjonalitet for å unlocke spells
@@ -14,6 +14,7 @@ let gameWon = false;
 let heroes = [];
 let spells = [];
 let monsters = [];
+let monsterIdCounter = 1;
 
 // Helse poeng
 const studentHealthPoints = 500;
@@ -71,28 +72,50 @@ const fetchSpells = async () => {
   }
 };
 
-const fetchMonsters = async () => {
+const fetchMonsters = async (difficultyLevel) => {
   try {
-    const response = await fetch(
-      ` https://api.open5e.com/monsters/?challenge_rating=${difficultyLevel}`
+    const totalPages = 65; // antall sider i api data
+    const numberOfPagesToFetch = 5; // antall sider for å få litt variasjon, men ikke for mange sånn at lastetiden er for lang
+    let allMonsters = [];
+
+    // array.from metoden for å lage et array ut av objekter som ligner array
+    const selectedPages = Array.from(
+      { length: numberOfPagesToFetch },
+      () => Math.floor(Math.random() * totalPages) + 1
     );
-    const data = await response.json();
 
-        const filteredMonsters = data.results.filter(
-          (monster) => parseFloat(monster.challenge_rating) <= difficultyLevel
-        );
-     // filtrerer ut fra hvilken vanskelighetsnivå nådd
+    // Fetcher monstre fra de sider
+    for (const page of selectedPages) {
+      const response = await fetch(
+        `https://api.open5e.com/monsters/?page=${page}`
+      );
+      const data = await response.json();
 
-    // Henter mellom 4 og 8 monstere, tilfeldig for å gjøre det spicy
-  const numberOfMonsters = Math.floor(Math.random() * (8 - 4 + 1)) + 4;
-  return filteredMonsters
-    .sort(() => 0.5 - Math.random())
-    .slice(0, numberOfMonsters);
+      // Filtrere ut fra challenge rating som øker hver gang heltene vinner
+      const filteredMonsters = data.results.filter(
+        (monster) => parseFloat(monster.challenge_rating) <= difficultyLevel
+      );
+
+      allMonsters = allMonsters.concat(filteredMonsters);
+    }
+
+    // tilfeldig velger mellom 4 og 8 monstre
+    const numberOfMonsters = Math.floor(Math.random() * 5) + 4; 
+    const selectedMonsters = allMonsters
+      .sort(() => 0.5 - Math.random()) 
+      .slice(0, numberOfMonsters) // Metoder for å gjøre det random om det er 4 eller 8
+      .map((monster) => ({
+        ...monster,
+        uniqueId: monsterIdCounter++, // Gir en unik id hvis jeg får monstre med samme navn
+      }));
+
+    return selectedMonsters;
   } catch (error) {
     console.error("Error fetching monsters:", error);
     return [];
   }
 };
+
 
 const displayStudents = (students, container) => {
   const studentContainer = document.createElement("div");
@@ -224,8 +247,9 @@ const displayStaff = (staff, container) => {
 const fightButton = document.getElementById("fight-btn");
 fightButton.addEventListener("click", async () => {
   gameWon = false; // reset spill
+  currentHeroIndex = 0;
   optionsContainer.style.display = "none"; // Gjemme options meny for renere UI
-  monsters = await fetchMonsters();
+  monsters = await fetchMonsters(difficultyLevel);
   displayMonsters(monsters); // Kall neste funkjon for å vise dem
 });
 
@@ -291,6 +315,7 @@ const displayMonsters = (monsters) => {
     // Struktur på mosnter kort
     const monsterDiv = document.createElement("div");
     monsterDiv.className = "monster";
+    monsterDiv.id = `monster-${monster.uniqueId}`; // Unik ID for Dom element. Dette er for å kunne ha flere monster med samme navn uten å skape problemer
     monsterDiv.innerHTML = `
       <strong>Name:</strong> <span class="monster-name">${
         monster.name
@@ -315,6 +340,10 @@ const displayMonsters = (monsters) => {
 const selectMonsterToAttack = (monster) => {
   let currentMonster = monster; // monster som blir angrepet nå
 
+  if (gameWon || currentHeroIndex >= heroes.length) {
+    return;
+  }
+
   // Helt som gjør angrep
   let currentHero = heroes[currentHeroIndex];
   alert(`${monster.name} selected! ${currentHero.name} will attack!`);
@@ -330,6 +359,9 @@ const selectMonsterToAttack = (monster) => {
 };
 
 const castSpellToDamage = (currentHero, currentMonster) => {
+  console.log(
+    `Selected monster: ${currentMonster.name} with ID: ${currentMonster.uniqueId}`
+  );
   // tilfeldig spell
   const randomSpell =
     unlockedSpells[Math.floor(Math.random() * unlockedSpells.length)];
@@ -358,33 +390,34 @@ const castSpellToDamage = (currentHero, currentMonster) => {
     alert(`It's now ${heroes[currentHeroIndex].name}'s turn!`);
   }
 };
-
 const damageToMonster = (currentMonster, damage) => {
-  // damge
+  console.log(`Dealing ${damage} damage to ${currentMonster.name}`);
+
+  // Damage calculation
   currentMonster.hit_points -= damage;
 
   // Finner riktig DOM element for å oppdatere HP
-  const monsterDivs = document.querySelectorAll(".monster");
-  monsterDivs.forEach((monsterDiv) => {
-    const monsterNameElement = monsterDiv.querySelector(".monster-name"); // Henter Monster navn fra DOM for å oppdatere HP og eventuelt fjerne hvis død
-    if (monsterNameElement.innerText === currentMonster.name) {
-      const monsterHPElement = monsterDiv.querySelector(".monster-hp");
-      monsterHPElement.innerText = currentMonster.hit_points; // Oppdaterer display av HP
+  const monsterDiv = document.getElementById(
+    `monster-${currentMonster.uniqueId}`
+  ); // Access the specific monster using its unique ID
+  const monsterHPElement = monsterDiv.querySelector(".monster-hp");
+  monsterHPElement.innerText = currentMonster.hit_points; // Oppdaterer display av HP
 
-      // SJekk om monster er død
-      if (currentMonster.hit_points <= 0) {
-        alert(`${currentMonster.name} is defeated!`);
-        monsterDiv.remove(); // Fjerner monster
-        monsters = monsters.filter((m) => m.name !== currentMonster.name); // Fjern monster  fra array
-        xp += 50; // xp reward
-        alert(`You earned 50 XP! Total XP: ${xp}`);
-        // SJekk om alle monstere er døde
-        checkForWin();
-      }
-    }
-  });
+  // SJekk om monster er død
+  if (currentMonster.hit_points <= 0) {
+    alert(
+      `${currentMonster.name} is defeated! You earned 50 XP! Total XP: ${xp}`
+    );
+    monsterDiv.remove(); // Fjerner monster from the DOM
+    monsters = monsters.filter(
+      (monster) => monster.uniqueId !== currentMonster.uniqueId
+    ); // Fjern monster fra array
+    xp += 50; // xp reward
+
+    // SJekk om alle monstere er døde
+    checkForWin();
+  }
 };
-
 
 const monsterRetaliate = () => {
   alert("Monsters are retaliating!");
@@ -395,13 +428,16 @@ const monsterRetaliate = () => {
       resetGame(); // Legge til funksjonalitet for game over state
       return;
     }
+    // må parse challenge rating for å ikke få NaN
+    const challengeRating = parseFloat(monster.challenge_rating);
     // Hver monster angriper en helt
     const randomHeroIndex = Math.floor(Math.random() * heroes.length);
     const randomHero = heroes[randomHeroIndex];
 
     // Damage scaling, men fortsatt også et tilfeldig nummer
-    const baseDamage = 50; 
-    const randomDamage = Math.floor(Math.random() * baseDamage) + monster.challenge_rating * 10;
+    const baseDamage = 50;
+    const randomDamage =
+      Math.floor(Math.random() * baseDamage) + challengeRating * 10;
 
     // Damage til helt, Heltens hp skal ikke gå under 0
     randomHero.healthPoints -= randomDamage;
