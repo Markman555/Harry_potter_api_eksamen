@@ -81,35 +81,38 @@ const fetchSpells = async () => {
 const fetchMonsters = async (difficultyLevel) => {
   try {
     const totalPages = 65; // antall sider i api data
-    const numberOfPagesToFetch = 5; // antall sider for å få litt variasjon, men ikke for mange sånn at lastetiden er for lang
+    const numberOfPagesToFetch = 2; // antall sider for å få litt variasjon, men ikke for mange sånn at lastetiden er for lang
     let allMonsters = [];
 
-    // array.from metoden for å lage et array ut av objekter som ligner array
+    // Finner noen tilfeldige sider å fetche monstere fra
     const selectedPages = Array.from(
       { length: numberOfPagesToFetch },
       () => Math.floor(Math.random() * totalPages) + 1
     );
 
-    // Fetcher monstre fra de sider
-    for (const page of selectedPages) {
-      const response = await fetch(
-        `https://api.open5e.com/monsters/?page=${page}`
-      );
-      const data = await response.json();
+    // Fetcher flere sider samtidig med promise i stedet for å loope som tidligere
+    const monsterPromises = selectedPages.map((page) =>
+      fetch(`https://api.open5e.com/monsters/?page=${page}`).then((response) =>
+        response.json()
+      )
+    );
 
-      // Filtrere ut fra challenge rating som øker hver gang heltene vinner
+    // Forbedrer lastetiden
+    const monstersData = await Promise.all(monsterPromises);
+
+    // Filtrere ut fra challenge rating som øker hver gang heltene vinner
+    monstersData.forEach((data) => {
       const filteredMonsters = data.results.filter(
         (monster) => parseFloat(monster.challenge_rating) <= difficultyLevel
       );
-
       allMonsters = allMonsters.concat(filteredMonsters);
-    }
+    });
 
-    // tilfeldig velger mellom 4 og 8 monstre
-    const numberOfMonsters = Math.floor(Math.random() * 5) + 4;
+    // tilfeldig velger mellom 3 og 6 monstre
+    const numberOfMonsters = Math.floor(Math.random() * 4) + 3;
     const selectedMonsters = allMonsters
       .sort(() => 0.5 - Math.random())
-      .slice(0, numberOfMonsters) // Metoder for å gjøre det random om det er 4 eller 8
+      .slice(0, numberOfMonsters)
       .map((monster) => ({
         ...monster,
         uniqueId: monsterIdCounter++, // Gir en unik id hvis jeg får monstre med samme navn
@@ -167,7 +170,7 @@ const displayStudents = (students, container) => {
         (studentHealthPoints / studentHealthPoints) * 100
       }%;"></div>
     `;
-    
+
     studentDiv.appendChild(healthBarDiv);
     // Push inn karakter i helte array.
     heroes.push({
@@ -314,7 +317,7 @@ const buySpell = (spell, spellDiv) => {
     allSpells = allSpells.filter((s) => s !== spell); //Fjern spell fra all spells etter det er kjøpt
     maxDamage += 5; // Når bruker kjøper spell øker max damage til heltene
     alert(`You unlocked the spell: ${spell.name}! Remaining XP: ${xp}`);
-     alert(`You can now do damage up to ${maxDamage}.`);
+    alert(`You can now do damage up to ${maxDamage}.`);
     spellDiv.remove();
   }
 };
@@ -379,8 +382,8 @@ const castSpellToDamage = (currentHero, currentMonster) => {
     unlockedSpells[Math.floor(Math.random() * unlockedSpells.length)];
 
   // TIlfeldig damage mellom 20 og 150
-   let randomDamage =
-     Math.floor(Math.random() * (maxDamage - minDamage + 1)) + minDamage;
+  let randomDamage =
+    Math.floor(Math.random() * (maxDamage - minDamage + 1)) + minDamage;
 
   // Hvis helten er staff, legg til 10%
   if (currentHero.type === "staff") {
