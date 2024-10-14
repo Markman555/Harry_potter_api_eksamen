@@ -29,8 +29,8 @@ const staffHealthPoints = 800;
 const fetchHarryPotterData = async () => {
   const students = await fetchStudents();
   const staff = await fetchStaff();
-  
-  loadGameProgress()
+
+  loadGameProgress();
   displayStudents(students, partyContainer);
   displayStaff(staff, partyContainer);
 };
@@ -128,7 +128,7 @@ const fetchMonsters = async (difficultyLevel) => {
   }
 };
 
-const onRefreshStudent = async (index) => {
+const refreshStudent = async (index) => {
   try {
     const newStudents = await fetchStudents(); // Fetch ny student for å erstatte
     const newStudent = newStudents[0]; // kun en
@@ -192,7 +192,7 @@ const onRefreshStudent = async (index) => {
     const refreshButton = document.createElement("button");
     refreshButton.className = "refresh-button";
     refreshButton.innerText = "Refresh Student";
-    refreshButton.onclick = () => onRefreshStudent(index);
+    refreshButton.onclick = () => refreshStudent(index);
     studentDiv.appendChild(refreshButton);
   } catch (error) {
     console.error("Error refreshing student:", error);
@@ -200,7 +200,7 @@ const onRefreshStudent = async (index) => {
   }
 };
 
-const onRefreshStaff = async (index) => {
+const refreshStaff = async (index) => {
   try {
     const newStaff = await fetchStaff(); // Fetch ny staff karakter
     const newStaffMember = newStaff[0]; // Kun en
@@ -268,7 +268,7 @@ const onRefreshStaff = async (index) => {
     const refreshButton = document.createElement("button");
     refreshButton.className = "refresh-button";
     refreshButton.innerText = "Refresh Staff";
-    refreshButton.onclick = () => onRefreshStaff(index);
+    refreshButton.onclick = () => refreshStaff(index);
     staffDiv.appendChild(refreshButton);
   } catch (error) {
     console.error("Error refreshing staff member:", error);
@@ -324,7 +324,7 @@ const displayStudents = (students, container) => {
     const refreshButton = document.createElement("button");
     refreshButton.className = "refresh-button";
     refreshButton.innerText = "Refresh Student";
-    refreshButton.onclick = () => onRefreshStudent(index);
+    refreshButton.onclick = () => refreshStudent(index);
     studentDiv.appendChild(refreshButton);
 
     // Push in i studentsArray
@@ -404,7 +404,7 @@ const displayStaff = (staff, container) => {
     const refreshButton = document.createElement("button");
     refreshButton.className = "refresh-button";
     refreshButton.innerText = "Refresh Staff";
-    refreshButton.onclick = () => onRefreshStaff(index);
+    refreshButton.onclick = () => refreshStaff(index);
     staffDiv.appendChild(refreshButton);
 
     // Push in i staffArray
@@ -769,8 +769,6 @@ const loadGameProgress = () => {
 
   if (savedProgress) {
     const gameProgress = JSON.parse(savedProgress);
-
-    // Restore difficulty level, spells, and other game data
     difficultyLevel = gameProgress.difficultyLevel;
     unlockedSpells = gameProgress.unlockedSpells || [];
 
