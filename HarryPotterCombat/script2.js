@@ -29,7 +29,8 @@ const staffHealthPoints = 800;
 const fetchHarryPotterData = async () => {
   const students = await fetchStudents();
   const staff = await fetchStaff();
-
+  
+  loadGameProgress()
   displayStudents(students, partyContainer);
   displayStaff(staff, partyContainer);
 };
@@ -73,7 +74,7 @@ const fetchSpells = async () => {
 
     allSpells = fetchedSpells.map((spell) => ({
       name: spell.name,
-      description: spell.description, 
+      description: spell.description,
     }));
   } catch (error) {
     console.error("Error fetching spells:", error);
@@ -152,7 +153,7 @@ const onRefreshStudent = async (index) => {
     // Oppdater heroes array
     const heroIndex = heroes.indexOf(oldStudent); //Overskriv den tidligere studenten i arrayet
     if (heroIndex > -1) {
-      heroes[heroIndex] = studentsArray[index]; 
+      heroes[heroIndex] = studentsArray[index];
     }
 
     // Oppdater struktur på kort
@@ -740,9 +741,43 @@ const checkForWin = () => {
       refreshButton.style.display = "block";
     });
     gameWon = true; // Spillet er vunnet nå
+    saveGameProgress();
   }
 };
 
+const resetGame = () => {
+  localStorage.removeItem("gameProgress");
+  alert("Game progress reset!");
+};
+
+const saveGameProgress = () => {
+  // Lagrer progress hvis bruker går ut av spillet
+  const gameProgress = {
+    difficultyLevel: difficultyLevel,
+    unlockedSpells: unlockedSpells,
+  };
+
+  //
+  localStorage.setItem("gameProgress", JSON.stringify(gameProgress));
+
+  alert("Game progress saved!");
+};
+
+const loadGameProgress = () => {
+  // Hent progress når man booter opp igjen
+  const savedProgress = localStorage.getItem("gameProgress");
+
+  if (savedProgress) {
+    const gameProgress = JSON.parse(savedProgress);
+
+    // Restore difficulty level, spells, and other game data
+    difficultyLevel = gameProgress.difficultyLevel;
+    unlockedSpells = gameProgress.unlockedSpells || [];
+
+    alert(`Game progress loaded! Difficulty is CR ${difficultyLevel}`);
+  } else {
+    alert("No saved game progress found.");
+  }
 };
 
 fetchHarryPotterData();
