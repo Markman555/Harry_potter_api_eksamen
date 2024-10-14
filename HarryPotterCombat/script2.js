@@ -6,6 +6,8 @@ const monstersContainer = document.getElementById("monsters-container");
 const upgradesContainer = document.getElementById("upgrades-container");
 let currentHeroIndex = 0; // Hvilken helt angriper.
 let difficultyLevel = 10;
+let minDamage = 0;
+let maxDamage = 80;
 // Intialiserer og fyller disse array
 let xp = 150; // total xp til spiller
 let unlockedSpells = []; // legger til funksjonalitet for å unlocke spells
@@ -13,6 +15,8 @@ let basicSpells = []; // de som spilleren har
 let allSpells = []; // Alle spells fetchet fra api
 let gameWon = false;
 let heroes = [];
+let studentsArray = []; // Array for studenter for å kunne refreshe
+let staffArray = []; // Array for staff for å kunne refreshe
 let spells = [];
 let monsters = [];
 let monsterIdCounter = 1;
@@ -65,9 +69,12 @@ const fetchSpells = async () => {
 
     // Starter med 3 basic spells
     basicSpells = fetchedSpells.slice(0, 3);
-    unlockedSpells = [...basicSpells]; // Starter med disse spells
+    unlockedSpells = [...basicSpells];
 
-    allSpells = fetchedSpells; // lagrer alle spells
+    allSpells = fetchedSpells.map((spell) => ({
+      name: spell.name,
+      description: spell.description, 
+    }));
   } catch (error) {
     console.error("Error fetching spells:", error);
   }
@@ -76,35 +83,38 @@ const fetchSpells = async () => {
 const fetchMonsters = async (difficultyLevel) => {
   try {
     const totalPages = 65; // antall sider i api data
-    const numberOfPagesToFetch = 5; // antall sider for å få litt variasjon, men ikke for mange sånn at lastetiden er for lang
+    const numberOfPagesToFetch = 2; // antall sider for å få litt variasjon, men ikke for mange sånn at lastetiden er for lang
     let allMonsters = [];
 
-    // array.from metoden for å lage et array ut av objekter som ligner array
+    // Finner noen tilfeldige sider å fetche monstere fra
     const selectedPages = Array.from(
       { length: numberOfPagesToFetch },
       () => Math.floor(Math.random() * totalPages) + 1
     );
 
-    // Fetcher monstre fra de sider
-    for (const page of selectedPages) {
-      const response = await fetch(
-        `https://api.open5e.com/monsters/?page=${page}`
-      );
-      const data = await response.json();
+    // Fetcher flere sider samtidig med promise i stedet for å loope som tidligere
+    const monsterPromises = selectedPages.map((page) =>
+      fetch(`https://api.open5e.com/monsters/?page=${page}`).then((response) =>
+        response.json()
+      )
+    );
 
-      // Filtrere ut fra challenge rating som øker hver gang heltene vinner
+    // Forbedrer lastetiden
+    const monstersData = await Promise.all(monsterPromises);
+
+    // Filtrere ut fra challenge rating som øker hver gang heltene vinner
+    monstersData.forEach((data) => {
       const filteredMonsters = data.results.filter(
         (monster) => parseFloat(monster.challenge_rating) <= difficultyLevel
       );
-
       allMonsters = allMonsters.concat(filteredMonsters);
-    }
+    });
 
-    // tilfeldig velger mellom 4 og 8 monstre
-    const numberOfMonsters = Math.floor(Math.random() * 5) + 4; 
+    // tilfeldig velger mellom 3 og 6 monstre
+    const numberOfMonsters = Math.floor(Math.random() * 4) + 3;
     const selectedMonsters = allMonsters
-      .sort(() => 0.5 - Math.random()) 
-      .slice(0, numberOfMonsters) // Metoder for å gjøre det random om det er 4 eller 8
+      .sort(() => 0.5 - Math.random())
+      .slice(0, numberOfMonsters)
       .map((monster) => ({
         ...monster,
         uniqueId: monsterIdCounter++, // Gir en unik id hvis jeg får monstre med samme navn
@@ -117,18 +127,165 @@ const fetchMonsters = async (difficultyLevel) => {
   }
 };
 
+const onRefreshStudent = async (index) => {
+  try {
+    const newStudents = await fetchStudents(); // Fetch ny student for å erstatte
+    const newStudent = newStudents[0]; // kun en
+
+    const { name, image, yearOfBirth, house, wand } = newStudent;
+    const { wood, core, length } = wand || {
+      wood: "N/A",
+      core: "N/A",
+      length: "N/A",
+    };
+
+    // Oppdater studenten i studentsArray
+    const oldStudent = studentsArray[index]; // Hent gamle student
+    studentsArray[index] = {
+      ...studentsArray[index],
+      name,
+      type: "student",
+      maxHealthPoints: studentHealthPoints,
+      healthPoints: studentHealthPoints,
+    };
+
+    // Oppdater heroes array
+    const heroIndex = heroes.indexOf(oldStudent); //Overskriv den tidligere studenten i arrayet
+    if (heroIndex > -1) {
+      heroes[heroIndex] = studentsArray[index]; 
+    }
+
+    // Oppdater struktur på kort
+    const studentDiv = document.querySelectorAll(".character")[index];
+    studentDiv.innerHTML = `
+      <strong>Name:</strong> ${name}<br>
+      <strong>Type:</strong> Student<br>
+      <strong>House:</strong> ${house || "N/A"}<br>
+      <strong>Year of Birth:</strong> ${yearOfBirth || "N/A"}<br>
+      <strong>Wand:</strong> Wood: ${wood}, Core: ${core}, Length: ${
+      length || "N/A"
+    }<br>
+    `;
+
+    const img = document.createElement("img");
+    img.src = image || defaultImage;
+    img.alt = `${name}'s Image`;
+    img.style.width = "100px";
+    img.style.borderRadius = "8px";
+    studentDiv.appendChild(img);
+
+    const healthDisplay = document.createElement("div");
+    healthDisplay.className = "health-display";
+    healthDisplay.innerText = `${studentHealthPoints}/${studentHealthPoints}`;
+    studentDiv.appendChild(healthDisplay);
+
+    const healthBarDiv = document.createElement("div");
+    healthBarDiv.className = "health-bar";
+    healthBarDiv.innerHTML = `
+      <div class="health-bar-fill" style="width: ${
+        (studentHealthPoints / studentHealthPoints) * 100
+      }%;"></div>
+    `;
+    studentDiv.appendChild(healthBarDiv);
+
+    const refreshButton = document.createElement("button");
+    refreshButton.className = "refresh-button";
+    refreshButton.innerText = "Refresh Student";
+    refreshButton.onclick = () => onRefreshStudent(index);
+    studentDiv.appendChild(refreshButton);
+  } catch (error) {
+    console.error("Error refreshing student:", error);
+    alert("There was an error refreshing the student data.");
+  }
+};
+
+const onRefreshStaff = async (index) => {
+  try {
+    const newStaff = await fetchStaff(); // Fetch ny staff karakter
+    const newStaffMember = newStaff[0]; // Kun en
+
+    const { name, image, yearOfBirth, species, ancestry, wand, patronus } =
+      newStaffMember;
+    const { wood, core, length } = wand || {
+      wood: "N/A",
+      core: "N/A",
+      length: "N/A",
+    };
+
+    // Oppdater staff karakter i staffArray
+    const oldStaff = staffArray[index]; // Hent tidligere som ble erstattet
+    staffArray[index] = {
+      ...staffArray[index],
+      name,
+      type: "staff",
+      maxHealthPoints: staffHealthPoints,
+      healthPoints: staffHealthPoints,
+    };
+
+    // Oppdater heroes array
+    const heroIndex = heroes.indexOf(oldStaff);
+    if (heroIndex > -1) {
+      heroes[heroIndex] = staffArray[index];
+    }
+
+    // Oppdater staff karakter struktur på kort
+    const staffDiv =
+      document.querySelectorAll(".character")[index + studentsArray.length];
+    staffDiv.innerHTML = `
+      <strong>Name:</strong> ${name}<br>
+      <strong>Type:</strong> Staff<br>
+      <strong>Year of Birth:</strong> ${yearOfBirth || "N/A"}<br>
+      <strong>Species:</strong> ${species || "N/A"}<br>
+      <strong>Ancestry:</strong> ${ancestry || "N/A"}<br>
+      <strong>Wand:</strong> Wood: ${wood}, Core: ${core}, Length: ${
+      length || "N/A"
+    }<br>
+      <strong>Patronus:</strong> ${patronus || "N/A"}<br>
+    `;
+
+    const img = document.createElement("img");
+    img.src = image || defaultImage;
+    img.alt = `${name}'s Image`;
+    img.style.width = "100px";
+    img.style.borderRadius = "8px";
+    staffDiv.appendChild(img);
+
+    const healthDisplay = document.createElement("div");
+    healthDisplay.className = "health-display";
+    healthDisplay.innerText = `${staffHealthPoints}/${staffHealthPoints}`;
+    staffDiv.appendChild(healthDisplay);
+
+    const healthBarDiv = document.createElement("div");
+    healthBarDiv.className = "health-bar";
+    healthBarDiv.innerHTML = `
+      <div class="health-bar-fill" style="width: ${
+        (staffHealthPoints / staffHealthPoints) * 100
+      }%;"></div>
+    `;
+    staffDiv.appendChild(healthBarDiv);
+
+    const refreshButton = document.createElement("button");
+    refreshButton.className = "refresh-button";
+    refreshButton.innerText = "Refresh Staff";
+    refreshButton.onclick = () => onRefreshStaff(index);
+    staffDiv.appendChild(refreshButton);
+  } catch (error) {
+    console.error("Error refreshing staff member:", error);
+  }
+};
 
 const displayStudents = (students, container) => {
   const studentContainer = document.createElement("div");
   studentContainer.className = "character-container";
 
-  students.forEach((student) => {
+  students.forEach((student, index) => {
     const { name, image, yearOfBirth, house, wand } = student;
     const { wood, core, length } = wand || {
       wood: "N/A",
       core: "N/A",
       length: "N/A",
     };
+
     // Struktur på kort
     const studentDiv = document.createElement("div");
     studentDiv.className = "character";
@@ -148,13 +305,11 @@ const displayStudents = (students, container) => {
     img.style.width = "100px";
     img.style.borderRadius = "8px";
     studentDiv.appendChild(img);
-
     // Helse poeng
     const healthDisplay = document.createElement("div");
     healthDisplay.className = "health-display";
     healthDisplay.innerText = `${studentHealthPoints}/${studentHealthPoints}`;
     studentDiv.appendChild(healthDisplay);
-
     // Helse bar
     const healthBarDiv = document.createElement("div");
     healthBarDiv.className = "health-bar";
@@ -164,7 +319,25 @@ const displayStudents = (students, container) => {
       }%;"></div>
     `;
     studentDiv.appendChild(healthBarDiv);
-    // Push inn karakter i helte array.
+    // Refresh knapp
+    const refreshButton = document.createElement("button");
+    refreshButton.className = "refresh-button";
+    refreshButton.innerText = "Refresh Student";
+    refreshButton.onclick = () => onRefreshStudent(index);
+    studentDiv.appendChild(refreshButton);
+
+    // Push in i studentsArray
+    studentsArray.push({
+      name: name,
+      type: "student",
+      healthPoints: studentHealthPoints,
+      maxHealthPoints: studentHealthPoints,
+      healthBarFill: healthBarDiv.querySelector(".health-bar-fill"),
+      healthDisplay: healthDisplay,
+      refreshButton: refreshButton,
+    });
+
+    // Push inn karakter i helte array. Vil refaktorere, men kanskje ikke tid
     heroes.push({
       name: name,
       type: "student",
@@ -183,7 +356,7 @@ const displayStaff = (staff, container) => {
   const staffContainer = document.createElement("div");
   staffContainer.className = "character-container";
 
-  staff.forEach((member) => {
+  staff.forEach((member, index) => {
     const { name, image, yearOfBirth, species, ancestry, wand, patronus } =
       member;
     const { wood, core, length } = wand || {
@@ -205,7 +378,6 @@ const displayStaff = (staff, container) => {
     }<br>
       <strong>Patronus:</strong> ${patronus || "N/A"}<br>
     `;
-
     // Bilde til karakter
     const img = document.createElement("img");
     img.src = image || defaultImage;
@@ -213,7 +385,6 @@ const displayStaff = (staff, container) => {
     img.style.width = "100px";
     img.style.borderRadius = "8px";
     staffDiv.appendChild(img);
-
     // Helse poeng
     const healthDisplay = document.createElement("div");
     healthDisplay.className = "health-display";
@@ -228,8 +399,25 @@ const displayStaff = (staff, container) => {
       }%;"></div>
     `;
     staffDiv.appendChild(healthBarDiv);
+    // Refresh staff karakter
+    const refreshButton = document.createElement("button");
+    refreshButton.className = "refresh-button";
+    refreshButton.innerText = "Refresh Staff";
+    refreshButton.onclick = () => onRefreshStaff(index);
+    staffDiv.appendChild(refreshButton);
 
-    // Push inn i helte array
+    // Push in i staffArray
+    staffArray.push({
+      name: member.name,
+      type: "staff",
+      healthPoints: staffHealthPoints,
+      maxHealthPoints: staffHealthPoints,
+      healthBarFill: healthBarDiv.querySelector(".health-bar-fill"),
+      healthDisplay: healthDisplay,
+      refreshButton: refreshButton,
+    });
+
+    // Push inn i helte array. Forsøke å refaktorere.
     heroes.push({
       name: member.name,
       type: "staff",
@@ -252,7 +440,22 @@ fightButton.addEventListener("click", async () => {
   optionsContainer.style.display = "none"; // Gjemme options meny for renere UI
   monsters = await fetchMonsters(difficultyLevel);
   displayMonsters(monsters); // Kall neste funkjon for å vise dem
+  disableRefreshButtons();
 });
+
+const disableRefreshButtons = () => {
+  // Fjern refresh knapp når bruker skal slåss mot monstre
+  studentsArray.forEach((student) => {
+    if (student.refreshButton) {
+      student.refreshButton.style.display = "none";
+    }
+  });
+  staffArray.forEach((staff) => {
+    if (staff.refreshButton) {
+      staff.refreshButton.style.display = "none";
+    }
+  });
+};
 
 const upgradesButton = document.getElementById("upgrades-btn");
 
@@ -263,6 +466,7 @@ upgradesButton.addEventListener("click", () => {
 const showUpgradesMenu = () => {
   optionsContainer.style.display = "none"; // Gjemmer options menu, legg til en knapp for å gå tilbaek
   upgradesContainer.style.display = "block";
+  upgradesContainer.style.width = "30%";
 
   // Tilbake til options meny
   const returnButton = document.createElement("button");
@@ -285,13 +489,14 @@ const showUpgradesMenu = () => {
     const spellDiv = document.createElement("div");
     spellDiv.innerHTML = `
       <strong>Spell:</strong> ${spell.name}<br>
+       <strong>Description:</strong> ${spell.description}<br>
       <strong>Cost:</strong> 100 XP<br>
     `;
 
     const buyButton = document.createElement("button");
     buyButton.innerText = "Buy";
     buyButton.disabled = xp < 100; // Sørg for de har nok xp
-    buyButton.onclick = () => buySpell(spell); // Kalle funksjon for å unlocke spell valgt
+    buyButton.onclick = () => buySpell(spell, spellDiv); // Kalle funksjon for å unlocke spell valgt
 
     spellDiv.appendChild(buyButton);
     upgradesDiv.appendChild(spellDiv);
@@ -300,11 +505,15 @@ const showUpgradesMenu = () => {
   upgradesContainer.appendChild(upgradesDiv);
 };
 
-const buySpell = (spell) => {
+const buySpell = (spell, spellDiv) => {
   if (xp >= 100) {
     xp -= 100; // xp
     unlockedSpells.push(spell); // push inn spell i array
+    allSpells = allSpells.filter((s) => s !== spell); //Fjern spell fra all spells etter det er kjøpt
+    maxDamage += 5; // Når bruker kjøper spell øker max damage til heltene
     alert(`You unlocked the spell: ${spell.name}! Remaining XP: ${xp}`);
+    alert(`You can now do damage up to ${maxDamage}.`);
+    spellDiv.remove();
   }
 };
 
@@ -368,7 +577,8 @@ const castSpellToDamage = (currentHero, currentMonster) => {
     unlockedSpells[Math.floor(Math.random() * unlockedSpells.length)];
 
   // TIlfeldig damage mellom 20 og 150
-  let randomDamage = Math.floor(Math.random() * (150 - 20 + 1)) + 20;
+  let randomDamage =
+    Math.floor(Math.random() * (maxDamage - minDamage + 1)) + minDamage;
 
   // Hvis helten er staff, legg til 10%
   if (currentHero.type === "staff") {
@@ -391,6 +601,7 @@ const castSpellToDamage = (currentHero, currentMonster) => {
     alert(`It's now ${heroes[currentHeroIndex].name}'s turn!`);
   }
 };
+
 const damageToMonster = (currentMonster, damage) => {
   console.log(`Dealing ${damage} damage to ${currentMonster.name}`);
 
@@ -400,7 +611,7 @@ const damageToMonster = (currentMonster, damage) => {
   // Finner riktig DOM element for å oppdatere HP
   const monsterDiv = document.getElementById(
     `monster-${currentMonster.uniqueId}`
-  ); // Access the specific monster using its unique ID
+  ); // Henter monterets unike ID
   const monsterHPElement = monsterDiv.querySelector(".monster-hp");
   monsterHPElement.innerText = currentMonster.hit_points; // Oppdaterer display av HP
 
@@ -436,7 +647,7 @@ const monsterRetaliate = () => {
     const randomHero = heroes[randomHeroIndex];
 
     // Damage scaling, men fortsatt også et tilfeldig nummer
-    const baseDamage = 50;
+    const baseDamage = 100;
     const randomDamage =
       Math.floor(Math.random() * baseDamage) + challengeRating * 10;
 
@@ -460,8 +671,7 @@ const monsterRetaliate = () => {
     if (randomHero.healthPoints <= 0) {
       alert(`${randomHero.name} has been defeated!`);
       const randomHeroElement = document.getElementById(randomHero.name);
-      if (randomHeroElement) randomHeroElement.remove();
-
+      randomHeroElement.remove();
       heroes.splice(randomHeroIndex, 1);
     }
   });
@@ -502,18 +712,37 @@ const checkForWin = () => {
     difficultyLevel += 1;
     alert(`Difficulty increased to CR ${difficultyLevel}.`);
 
-    heroes.forEach((hero) => {
-      hero.healthPoints = hero.maxHealthPoints; // Reset helse poeng
+    studentsArray.forEach((student) => {
+      student.healthPoints = student.maxHealthPoints; // Reset helse poeng
 
       // Oppdater
-      hero.healthDisplay.innerText = `${hero.maxHealthPoints}/${hero.maxHealthPoints}`;
+      student.healthDisplay.innerText = `${student.maxHealthPoints}/${student.maxHealthPoints}`;
 
       // Reset bar til 100%
-      hero.healthBarFill.style.width = "100%";
-    });
+      student.healthBarFill.style.width = "100%";
 
+      // Vis refresh knapp igjen
+      const refreshButton = student.refreshButton;
+      refreshButton.style.display = "block";
+    });
+    // Må gjøres separat for staff og student for at refresh knapp skal kunne komme opp igjen
+    staffArray.forEach((staff) => {
+      staff.healthPoints = staff.maxHealthPoints; // Reset helse poeng
+
+      // Oppdater
+      staff.healthDisplay.innerText = `${staff.maxHealthPoints}/${staff.maxHealthPoints}`;
+
+      // Reset bar til 100%
+      staff.healthBarFill.style.width = "100%";
+
+      // Vis refresh knapp igjen
+      const refreshButton = staff.refreshButton;
+      refreshButton.style.display = "block";
+    });
     gameWon = true; // Spillet er vunnet nå
   }
+};
+
 };
 
 fetchHarryPotterData();
