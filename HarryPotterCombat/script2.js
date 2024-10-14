@@ -346,6 +346,7 @@ const displayStudents = (students, container) => {
       maxHealthPoints: studentHealthPoints,
       healthBarFill: healthBarDiv.querySelector(".health-bar-fill"),
       healthDisplay: healthDisplay,
+      refreshButton: refreshButton
     });
 
     studentContainer.appendChild(studentDiv);
@@ -426,6 +427,7 @@ const displayStaff = (staff, container) => {
       maxHealthPoints: staffHealthPoints,
       healthBarFill: healthBarDiv.querySelector(".health-bar-fill"),
       healthDisplay: healthDisplay,
+      refreshButton: refreshButton
     });
 
     staffContainer.appendChild(staffDiv);
@@ -447,14 +449,10 @@ fightButton.addEventListener("click", async () => {
 const disableRefreshButtons = () => {
   // Fjern refresh knapp når bruker skal slåss mot monstre
   studentsArray.forEach((student) => {
-    if (student.refreshButton) {
       student.refreshButton.style.display = "none";
-    }
   });
   staffArray.forEach((staff) => {
-    if (staff.refreshButton) {
       staff.refreshButton.style.display = "none";
-    }
   });
 };
 
