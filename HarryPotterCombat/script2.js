@@ -30,6 +30,7 @@ const fetchHarryPotterData = async () => {
   const students = await fetchStudents();
   const staff = await fetchStaff();
 
+  loadGameProgress();
   displayStudents(students, partyContainer);
   displayStaff(staff, partyContainer);
 };
@@ -73,7 +74,7 @@ const fetchSpells = async () => {
 
     allSpells = fetchedSpells.map((spell) => ({
       name: spell.name,
-      description: spell.description, 
+      description: spell.description,
     }));
   } catch (error) {
     console.error("Error fetching spells:", error);
@@ -127,7 +128,7 @@ const fetchMonsters = async (difficultyLevel) => {
   }
 };
 
-const onRefreshStudent = async (index) => {
+const refreshStudent = async (index) => {
   try {
     const newStudents = await fetchStudents(); // Fetch ny student for å erstatte
     const newStudent = newStudents[0]; // kun en
@@ -152,7 +153,7 @@ const onRefreshStudent = async (index) => {
     // Oppdater heroes array
     const heroIndex = heroes.indexOf(oldStudent); //Overskriv den tidligere studenten i arrayet
     if (heroIndex > -1) {
-      heroes[heroIndex] = studentsArray[index]; 
+      heroes[heroIndex] = studentsArray[index];
     }
 
     // Oppdater struktur på kort
@@ -191,7 +192,7 @@ const onRefreshStudent = async (index) => {
     const refreshButton = document.createElement("button");
     refreshButton.className = "refresh-button";
     refreshButton.innerText = "Refresh Student";
-    refreshButton.onclick = () => onRefreshStudent(index);
+    refreshButton.onclick = () => refreshStudent(index);
     studentDiv.appendChild(refreshButton);
   } catch (error) {
     console.error("Error refreshing student:", error);
@@ -199,7 +200,7 @@ const onRefreshStudent = async (index) => {
   }
 };
 
-const onRefreshStaff = async (index) => {
+const refreshStaff = async (index) => {
   try {
     const newStaff = await fetchStaff(); // Fetch ny staff karakter
     const newStaffMember = newStaff[0]; // Kun en
@@ -267,7 +268,7 @@ const onRefreshStaff = async (index) => {
     const refreshButton = document.createElement("button");
     refreshButton.className = "refresh-button";
     refreshButton.innerText = "Refresh Staff";
-    refreshButton.onclick = () => onRefreshStaff(index);
+    refreshButton.onclick = () => refreshStaff(index);
     staffDiv.appendChild(refreshButton);
   } catch (error) {
     console.error("Error refreshing staff member:", error);
@@ -323,7 +324,7 @@ const displayStudents = (students, container) => {
     const refreshButton = document.createElement("button");
     refreshButton.className = "refresh-button";
     refreshButton.innerText = "Refresh Student";
-    refreshButton.onclick = () => onRefreshStudent(index);
+    refreshButton.onclick = () => refreshStudent(index);
     studentDiv.appendChild(refreshButton);
 
     // Push in i studentsArray
@@ -345,6 +346,7 @@ const displayStudents = (students, container) => {
       maxHealthPoints: studentHealthPoints,
       healthBarFill: healthBarDiv.querySelector(".health-bar-fill"),
       healthDisplay: healthDisplay,
+      refreshButton: refreshButton
     });
 
     studentContainer.appendChild(studentDiv);
@@ -403,7 +405,7 @@ const displayStaff = (staff, container) => {
     const refreshButton = document.createElement("button");
     refreshButton.className = "refresh-button";
     refreshButton.innerText = "Refresh Staff";
-    refreshButton.onclick = () => onRefreshStaff(index);
+    refreshButton.onclick = () => refreshStaff(index);
     staffDiv.appendChild(refreshButton);
 
     // Push in i staffArray
@@ -425,6 +427,7 @@ const displayStaff = (staff, container) => {
       maxHealthPoints: staffHealthPoints,
       healthBarFill: healthBarDiv.querySelector(".health-bar-fill"),
       healthDisplay: healthDisplay,
+      refreshButton: refreshButton
     });
 
     staffContainer.appendChild(staffDiv);
@@ -446,14 +449,10 @@ fightButton.addEventListener("click", async () => {
 const disableRefreshButtons = () => {
   // Fjern refresh knapp når bruker skal slåss mot monstre
   studentsArray.forEach((student) => {
-    if (student.refreshButton) {
       student.refreshButton.style.display = "none";
-    }
   });
   staffArray.forEach((staff) => {
-    if (staff.refreshButton) {
       staff.refreshButton.style.display = "none";
-    }
   });
 };
 
@@ -740,6 +739,40 @@ const checkForWin = () => {
       refreshButton.style.display = "block";
     });
     gameWon = true; // Spillet er vunnet nå
+    saveGameProgress();
+  }
+};
+
+const resetGame = () => {
+  localStorage.removeItem("gameProgress");
+  alert("Game progress reset!");
+};
+
+const saveGameProgress = () => {
+  // Lagrer progress hvis bruker går ut av spillet
+  const gameProgress = {
+    difficultyLevel: difficultyLevel,
+    unlockedSpells: unlockedSpells,
+  };
+
+  //
+  localStorage.setItem("gameProgress", JSON.stringify(gameProgress));
+
+  alert("Game progress saved!");
+};
+
+const loadGameProgress = () => {
+  // Hent progress når man booter opp igjen
+  const savedProgress = localStorage.getItem("gameProgress");
+
+  if (savedProgress) {
+    const gameProgress = JSON.parse(savedProgress);
+    difficultyLevel = gameProgress.difficultyLevel;
+    unlockedSpells = gameProgress.unlockedSpells || [];
+
+    alert(`Game progress loaded! Difficulty is CR ${difficultyLevel}`);
+  } else {
+    alert("No saved game progress found.");
   }
 };
 
